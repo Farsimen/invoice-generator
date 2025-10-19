@@ -242,12 +242,45 @@ textarea {
     text-transform: uppercase;
 }
 
-/* Service Controls */
+/* Service Controls - IMPROVED RESPONSIVE LAYOUT */
 .service-input-group {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr auto;
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 16px;
     align-items: end;
+}
+
+/* Desktop layout improvements */
+@media (min-width: 1024px) {
+    .service-input-group {
+        grid-template-columns: 2fr 1.5fr 100px 120px 100px 120px;
+        gap: 12px;
+        align-items: end;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .service-input-group {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .service-input-group input:nth-child(3),
+    .service-input-group input:nth-child(4),
+    .service-input-group input:nth-child(5) {
+        grid-column: 1;
+    }
+    
+    .add-btn {
+        grid-column: 2;
+        justify-self: end;
+    }
+}
+
+/* Service input fields */
+.service-input-group input,
+.service-input-group select {
+    min-width: 0; /* Allow inputs to shrink */
 }
 
 .add-btn {
@@ -264,6 +297,7 @@ textarea {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    white-space: nowrap;
 }
 
 .add-btn:hover {
@@ -333,7 +367,7 @@ textarea {
     background: #dc2626;
 }
 
-/* Total Discount Section */
+/* Total Discount Section - IMPROVED WITH LABEL */
 .total-discount-section {
     margin-top: 24px;
     padding: 20px;
@@ -344,6 +378,14 @@ textarea {
 
 .total-discount-section .form-group {
     max-width: 300px;
+}
+
+.total-discount-section label {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    display: block;
 }
 
 /* Invoice Actions */
@@ -383,6 +425,10 @@ textarea {
     background: var(--danger-color);
 }
 
+.save-btn {
+    background: var(--success-color);
+}
+
 .email-btn {
     background: var(--accent-color);
 }
@@ -416,6 +462,32 @@ textarea {
     color: #000;
     direction: rtl;
     box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Watermark for PDF */
+.invoice-preview::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 20px 20px, rgba(59, 130, 246, 0.03) 2px, transparent 2px),
+        radial-gradient(circle at 60px 60px, rgba(59, 130, 246, 0.03) 2px, transparent 2px),
+        radial-gradient(circle at 100px 20px, rgba(59, 130, 246, 0.03) 2px, transparent 2px),
+        radial-gradient(circle at 140px 60px, rgba(59, 130, 246, 0.03) 2px, transparent 2px);
+    background-size: 80px 80px, 80px 80px, 80px 80px, 80px 80px;
+    background-position: 0 0, 40px 40px, 20px 0, 60px 40px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.invoice-preview > * {
+    position: relative;
+    z-index: 1;
 }
 
 /* Two-column header layout */
@@ -899,6 +971,49 @@ textarea {
     line-height: 1.6;
 }
 
+/* PWA Install Prompt */
+.pwa-install-prompt {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    max-width: 300px;
+    border: 1px solid var(--border-color);
+}
+
+.pwa-prompt-content {
+    text-align: center;
+}
+
+.pwa-prompt-content i {
+    font-size: 2rem;
+    color: var(--accent-color);
+    margin-bottom: 12px;
+}
+
+.pwa-prompt-content h3 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.pwa-prompt-content p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.pwa-prompt-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
@@ -986,6 +1101,13 @@ textarea {
     .stat-number {
         font-size: 2rem;
     }
+
+    .pwa-install-prompt {
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        max-width: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1050,7 +1172,8 @@ textarea {
     .service-controls,
     .invoice-actions,
     .toast,
-    .loading-spinner {
+    .loading-spinner,
+    .pwa-install-prompt {
         display: none;
     }
     
@@ -1059,5 +1182,10 @@ textarea {
         border: none;
         margin: 0;
         padding: 0;
+    }
+
+    .invoice-preview::before {
+        background-size: 40px 40px, 40px 40px, 40px 40px, 40px 40px;
+        opacity: 0.7;
     }
 }
