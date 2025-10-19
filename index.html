@@ -134,58 +134,76 @@
                 <h2><i class="fas fa-cogs"></i> خدمات</h2>
                 <div class="service-controls">
                     <div class="service-input-group">
-                        <select id="serviceSelect" aria-label="انتخاب خدمت از فهرست">
-                            <option value="">انتخاب خدمت</option>
-                            <optgroup label="خدمات وب">
-                                <option value="طراحی سایت">طراحی سایت</option>
-                                <option value="توسعه وب اپلیکیشن">توسعه وب اپلیکیشن</option>
-                                <option value="پشتیبانی سایت">پشتیبانی سایت</option>
-                                <option value="بهینه سازی سئو">بهینه سازی سئو</option>
-                                <option value="امنیت سایت">امنیت سایت</option>
-                                <option value="بک آپ و بازیابی">بک آپ و بازیابی</option>
-                                <option value="ارتقاء و بهبود سایت">ارتقاء و بهبود سایت</option>
-                                <option value="تحلیل ترافیک وب">تحلیل ترافیک وب</option>
-                                <option value="طراحی UI/UX">طراحی UI/UX</option>
-                                <option value="توسعه فروشگاه اینترنتی">توسعه فروشگاه اینترنتی</option>
-                                <option value="بهینه سازی سرعت سایت">بهینه سازی سرعت سایت</option>
-                                <option value="پیاده سازی CMS">پیاده سازی CMS</option>
-                            </optgroup>
-                            <optgroup label="آموزش بازارهای مالی">
-                                <option value="آموزش تحلیل تکنیکال">آموزش تحلیل تکنیکال</option>
-                                <option value="آموزش تحلیل بنیادی">آموزش تحلیل بنیادی</option>
-                                <option value="آموزش ترید فارکس">آموزش ترید فارکس</option>
-                                <option value="مشاوره سرمایه گذاری">مشاوره سرمایه گذاری</option>
-                                <option value="آموزش ارزهای دیجیتال">آموزش ارزهای دیجیتال</option>
-                                <option value="راهنمایی والت و صرافی">راهنمایی والت و صرافی</option>
-                                <option value="آموزش دیفای و NFT">آموزش دیفای و NFT</option>
-                                <option value="آموزش استیکینگ">آموزش استیکینگ</option>
-                                <option value="تحلیل پرتفولیو">تحلیل پرتفولیو</option>
-                                <option value="آموزش ریسک منجمنت">آموزش ریسک منجمنت</option>
-                                <option value="آموزش معاملات آتی">آموزش معاملات آتی</option>
-                                <option value="مشاوره مالیاتی ارز دیجیتال">مشاوره مالیاتی ارز دیجیتال</option>
-                            </optgroup>
-                            <optgroup label="خدمات شبکه و VPN">
-                                <option value="راه اندازی VPN">راه اندازی VPN</option>
-                                <option value="کانفیگ سرور">کانفیگ سرور</option>
-                                <option value="امنیت شبکه">امنیت شبکه</option>
-                                <option value="مونیتورینگ سرور">مونیتورینگ سرور</option>
-                                <option value="بهینه سازی شبکه">بهینه سازی شبکه</option>
-                                <option value="راه اندازی فایروال">راه اندازی فایروال</option>
-                                <option value="بک آپ سرور">بک آپ سرور</option>
-                                <option value="مهاجرت سرور">مهاجرت سرور</option>
-                                <option value="پیکربندی DNS">پیکربندی DNS</option>
-                                <option value="SSL Certificate">SSL Certificate</option>
-                                <option value="Load Balancing">Load Balancing</option>
-                                <option value="CDN Setup">CDN Setup</option>
-                            </optgroup>
-                        </select>
-                        <input type="text" id="customService" placeholder="یا خدمت سفارشی وارد کنید" aria-label="خدمت سفارشی">
-                        <input type="number" id="serviceQuantity" placeholder="تعداد" min="1" value="1" aria-label="تعداد" required>
-                        <input type="number" id="servicePrice" placeholder="قیمت (تومان)" min="0" step="1000" aria-label="قیمت به تومان" required>
-                        <input type="number" id="serviceDiscount" placeholder="تخفیف %" min="0" max="100" value="0" aria-label="درصد تخفیف">
-                        <button id="addService" class="add-btn" type="button" aria-label="افزودن خدمت به فاکتور">
-                            <i class="fas fa-plus"></i> افزودن
-                        </button>
+                        <div class="form-group">
+                            <label>انتخاب خدمت</label>
+                            <select id="serviceSelect" aria-label="انتخاب خدمت از فهرست">
+                                <option value="">انتخاب خدمت</option>
+                                <optgroup label="خدمات وب">
+                                    <option value="طراحی سایت">طراحی سایت</option>
+                                    <option value="توسعه وب اپلیکیشن">توسعه وب اپلیکیشن</option>
+                                    <option value="پشتیبانی سایت">پشتیبانی سایت</option>
+                                    <option value="بهینه سازی سئو">بهینه سازی سئو</option>
+                                    <option value="امنیت سایت">امنیت سایت</option>
+                                    <option value="بک آپ و بازیابی">بک آپ و بازیابی</option>
+                                    <option value="ارتقاء و بهبود سایت">ارتقاء و بهبود سایت</option>
+                                    <option value="تحلیل ترافیک وب">تحلیل ترافیک وب</option>
+                                    <option value="طراحی UI/UX">طراحی UI/UX</option>
+                                    <option value="توسعه فروشگاه اینترنتی">توسعه فروشگاه اینترنتی</option>
+                                    <option value="بهینه سازی سرعت سایت">بهینه سازی سرعت سایت</option>
+                                    <option value="پیاده سازی CMS">پیاده سازی CMS</option>
+                                </optgroup>
+                                <optgroup label="آموزش بازارهای مالی">
+                                    <option value="آموزش تحلیل تکنیکال">آموزش تحلیل تکنیکال</option>
+                                    <option value="آموزش تحلیل بنیادی">آموزش تحلیل بنیادی</option>
+                                    <option value="آموزش ترید فارکس">آموزش ترید فارکس</option>
+                                    <option value="مشاوره سرمایه گذاری">مشاوره سرمایه گذاری</option>
+                                    <option value="آموزش ارزهای دیجیتال">آموزش ارزهای دیجیتال</option>
+                                    <option value="راهنمایی والت و صرافی">راهنمایی والت و صرافی</option>
+                                    <option value="آموزش دیفای و NFT">آموزش دیفای و NFT</option>
+                                    <option value="آموزش استیکینگ">آموزش استیکینگ</option>
+                                    <option value="تحلیل پرتفولیو">تحلیل پرتفولیو</option>
+                                    <option value="آموزش ریسک منجمنت">آموزش ریسک منجمنت</option>
+                                    <option value="آموزش معاملات آتی">آموزش معاملات آتی</option>
+                                    <option value="مشاوره مالیاتی ارز دیجیتال">مشاوره مالیاتی ارز دیجیتال</option>
+                                </optgroup>
+                                <optgroup label="خدمات شبکه و VPN">
+                                    <option value="راه اندازی VPN">راه اندازی VPN</option>
+                                    <option value="کانفیگ سرور">کانفیگ سرور</option>
+                                    <option value="امنیت شبکه">امنیت شبکه</option>
+                                    <option value="مونیتورینگ سرور">مونیتورینگ سرور</option>
+                                    <option value="بهینه سازی شبکه">بهینه سازی شبکه</option>
+                                    <option value="راه اندازی فایروال">راه اندازی فایروال</option>
+                                    <option value="بک آپ سرور">بک آپ سرور</option>
+                                    <option value="مهاجرت سرور">مهاجرت سرور</option>
+                                    <option value="پیکربندی DNS">پیکربندی DNS</option>
+                                    <option value="SSL Certificate">SSL Certificate</option>
+                                    <option value="Load Balancing">Load Balancing</option>
+                                    <option value="CDN Setup">CDN Setup</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>خدمت سفارشی</label>
+                            <input type="text" id="customService" placeholder="یا خدمت سفارشی وارد کنید" aria-label="خدمت سفارشی">
+                        </div>
+                        <div class="form-group">
+                            <label>تعداد</label>
+                            <input type="number" id="serviceQuantity" placeholder="تعداد" min="1" value="1" aria-label="تعداد" required>
+                        </div>
+                        <div class="form-group">
+                            <label>قیمت (تومان)</label>
+                            <input type="number" id="servicePrice" placeholder="قیمت (تومان)" min="0" step="1000" aria-label="قیمت به تومان" required>
+                        </div>
+                        <div class="form-group">
+                            <label>تخفیف %</label>
+                            <input type="number" id="serviceDiscount" placeholder="تخفیف %" min="0" max="100" value="0" aria-label="درصد تخفیف">
+                        </div>
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button id="addService" class="add-btn" type="button" aria-label="افزودن خدمت به فاکتور">
+                                <i class="fas fa-plus"></i> افزودن
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="services-list" id="servicesList" role="list" aria-label="فهرست خدمات اضافه شده"></div>
@@ -204,6 +222,9 @@
             <section class="invoice-section">
                 <h2><i class="fas fa-file-alt"></i> پیش نمایش فاکتور</h2>
                 <div class="invoice-actions">
+                    <button id="saveInvoice" class="action-btn save-btn" type="button" aria-label="ثبت فاکتور بدون دانلود">
+                        <i class="fas fa-save"></i> ثبت فاکتور
+                    </button>
                     <button id="generatePDF" class="action-btn pdf-btn" type="button" aria-label="دانلود فاکتور به صورت PDF">
                         <i class="fas fa-file-pdf"></i> دانلود PDF
                     </button>
