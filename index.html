@@ -22,22 +22,89 @@
     </header>
 
     <main class="main-content" id="mainContent">
-      <!-- sections (company, customer, services, preview) kept as in previous commit -->
-      <!-- BEGIN: Company -->
-      <section class="company-section"> ... </section>
-      <!-- END: Company -->
-      <!-- BEGIN: Customer -->
-      <section class="customer-section"> ... </section>
-      <!-- END: Customer -->
-      <!-- BEGIN: Services -->
-      <section class="services-section"> ... </section>
-      <!-- END: Services -->
-      <!-- BEGIN: Preview -->
-      <section class="invoice-section"> ... </section>
-      <!-- END: Preview -->
+      <!-- Company Info Section -->
+      <section class="company-section">
+        <h2><i class="fas fa-building"></i> اطلاعات شرکت</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>نام شرکت</label><input type="text" id="companyName" placeholder="نام شرکت" required></div>
+          <div class="form-group"><label>شماره تماس</label><input type="tel" id="companyPhone" placeholder="شماره تماس"></div>
+          <div class="form-group"><label>ایمیل</label><input type="email" id="companyEmail" placeholder="ایمیل"></div>
+          <div class="form-group full-width"><label>آدرس</label><textarea id="companyAddress" placeholder="آدرس کامل" rows="3"></textarea></div>
+        </div>
+        <h3><i class="fas fa-credit-card"></i> اطلاعات بانکی</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>شماره کارت</label><input type="text" id="cardNumber" placeholder="0000-0000-0000-0000" maxlength="19"></div>
+          <div class="form-group"><label>شماره حساب</label><input type="text" id="accountNumber" placeholder="شماره حساب"></div>
+          <div class="form-group"><label>شماره شبا</label><input type="text" id="ibanNumber" placeholder="IR00-0000-0000-0000-0000-00" maxlength="26"></div>
+        </div>
+      </section>
+
+      <!-- Customer Info Section -->
+      <section class="customer-section">
+        <h2><i class="fas fa-user"></i> اطلاعات مشتری</h2>
+        <div class="form-grid">
+          <div class="form-group"><label>نام مشتری</label><input type="text" id="customerName" placeholder="نام مشتری" required></div>
+          <div class="form-group"><label>شماره تماس</label><input type="tel" id="customerPhone" placeholder="شماره تماس"></div>
+          <div class="form-group"><label>ایمیل</label><input type="email" id="customerEmail" placeholder="ایمیل"></div>
+          <div class="form-group full-width"><label>آدرس</label><textarea id="customerAddress" placeholder="آدرس" rows="3"></textarea></div>
+        </div>
+      </section>
+
+      <!-- Services Section -->
+      <section class="services-section">
+        <h2><i class="fas fa-cogs"></i> خدمات</h2>
+        <div class="service-controls">
+          <div class="service-input-group">
+            <div class="form-group"><label>انتخاب خدمت</label>
+              <select id="serviceSelect">
+                <option value="">انتخاب خدمت</option>
+                <optgroup label="خدمات وب">
+                  <option value="طراحی سایت">طراحی سایت</option>
+                  <option value="توسعه وب اپلیکیشن">توسعه وب اپلیکیشن</option>
+                  <option value="پشتیبانی سایت">پشتیبانی سایت</option>
+                  <option value="بهینه سازی سئو">بهینه سازی سئو</option>
+                </optgroup>
+                <optgroup label="خدمات شبکه و VPN">
+                  <option value="راه اندازی VPN">راه اندازی VPN</option>
+                  <option value="کانفیگ سرور">کانفیگ سرور</option>
+                  <option value="امنیت شبکه">امنیت شبکه</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group"><label>خدمت سفارشی</label><input type="text" id="customService" placeholder="یا خدمت سفارشی وارد کنید"></div>
+            <div class="form-group"><label>تعداد</label><input type="number" id="serviceQuantity" min="1" value="1"></div>
+            <div class="form-group"><label>قیمت (تومان)</label><input type="number" id="servicePrice" min="0" step="1000"></div>
+            <div class="form-group"><label>تخفیف %</label><input type="number" id="serviceDiscount" min="0" max="100" value="0"></div>
+            <div class="form-group"><label>&nbsp;</label><button id="addService" class="add-btn" type="button"><i class="fas fa-plus"></i> افزودن</button></div>
+          </div>
+        </div>
+        <div class="services-list" id="servicesList"></div>
+        <div class="total-discount-notes-section">
+          <div class="discount-group">
+            <h3><i class="fas fa-percentage"></i> کادر تخفیفات</h3>
+            <div class="form-group"><label>تخفیف کلی (درصد)</label><input type="number" id="totalDiscount" min="0" max="100" value="0"></div>
+          </div>
+          <div class="notes-group">
+            <h3><i class="fas fa-sticky-note"></i> توضیحات اضافی</h3>
+            <div class="form-group"><label>توضیحات</label><textarea id="invoiceNotes" rows="3" placeholder="توضیحات یا یادداشت برای این فاکتور..."></textarea></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Invoice Preview -->
+      <section class="invoice-section">
+        <h2><i class="fas fa-file-alt"></i> پیش نمایش فاکتور</h2>
+        <div class="invoice-actions">
+          <button id="saveInvoice" class="action-btn save-btn" type="button"><i class="fas fa-save"></i> ثبت فاکتور</button>
+          <button id="generatePDF" class="action-btn pdf-btn" type="button"><i class="fas fa-file-pdf"></i> دانلود PDF</button>
+          <button id="shareEmail" class="action-btn email-btn" type="button"><i class="fas fa-envelope"></i> ارسال ایمیل</button>
+          <button id="shareWhatsApp" class="action-btn whatsapp-btn" type="button"><i class="fab fa-whatsapp"></i> اشتراک واتساپ</button>
+          <button id="shareTelegram" class="action-btn telegram-btn" type="button"><i class="fab fa-telegram"></i> اشتراک تلگرام</button>
+        </div>
+        <div class="invoice-preview" id="invoicePreview"></div>
+      </section>
     </main>
 
-    <!-- Full history section injected here for reliability -->
     <section class="invoice-history-section" id="historySection" style="display:none;">
       <div class="history-header">
         <h2><i class="fas fa-history"></i> فاکتورهای صادر شده</h2>
