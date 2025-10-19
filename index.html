@@ -208,12 +208,22 @@
                 </div>
                 <div class="services-list" id="servicesList" role="list" aria-label="فهرست خدمات اضافه شده"></div>
                 
-                <!-- Total Discount -->
-                <div class="total-discount-section">
-                    <h3><i class="fas fa-percentage"></i> کادر تخفیفات</h3>
-                    <div class="form-group">
-                        <label>تخفیف کلی (درصد)</label>
-                        <input type="number" id="totalDiscount" placeholder="0" min="0" max="100" value="0" aria-label="درصد تخفیف کلی">
+                <!-- Total Discount and Notes Section -->
+                <div class="total-discount-notes-section">
+                    <div class="discount-group">
+                        <h3><i class="fas fa-percentage"></i> کادر تخفیفات</h3>
+                        <div class="form-group">
+                            <label>تخفیف کلی (درصد)</label>
+                            <input type="number" id="totalDiscount" placeholder="0" min="0" max="100" value="0" aria-label="درصد تخفیف کلی">
+                        </div>
+                    </div>
+                    
+                    <div class="notes-group">
+                        <h3><i class="fas fa-sticky-note"></i> توضیحات اضافی</h3>
+                        <div class="form-group">
+                            <label>توضیحات</label>
+                            <textarea id="invoiceNotes" placeholder="توضیحات یا یادداشت برای این فاکتور..." rows="3" aria-label="توضیحات اضافی فاکتور"></textarea>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -358,7 +368,7 @@
         // Simple analytics placeholder
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                console.log('PWA Invoice Generator v2.0.0 loaded');
+                console.log('PWA Invoice Generator v2.0.1 loaded');
             });
         }
     </script>
