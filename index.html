@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <!-- head unchanged -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>سامانه صدور فاکتور - Invoice Generator</title>
@@ -11,10 +10,9 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- body content unchanged above -->
-  <!-- Only invoice section bottom wrapper changed to use invoice-bottom grid -->
+  <!-- ... other sections stay the same ... -->
   <div class="container">
-    <!-- ... previous sections ... -->
+    <!-- existing content preserved, not repeating to keep diff small -->
     <section class="invoice-section">
       <h2><i class="fas fa-file-alt"></i> پیش نمایش فاکتور</h2>
       <div class="invoice-actions">
@@ -30,5 +28,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="script.js"></script>
+  <script src="post-render-patch.js"></script>
 </body>
 </html>
