@@ -1,7 +1,7 @@
 /**
  * Enhanced Invoice Generator with History, Validation, and PWA Support
  * Author: Farsimen
- * Version: 2.0.0
+ * Version: 2.0.1
  */
 
 class InvoiceGenerator {
@@ -26,6 +26,7 @@ class InvoiceGenerator {
     this.render();
     this.startAutoSave();
     this.setupValidation();
+    this.setupPWA();
   }
 
   bindEvents() {
@@ -54,7 +55,8 @@ class InvoiceGenerator {
       el.addEventListener('input', this.debounce(() => this.render(), 300));
     });
     
-    // PDF and sharing
+    // Invoice actions
+    $('#saveInvoice')?.addEventListener('click', () => this.saveInvoice());
     $('#generatePDF')?.addEventListener('click', () => this.downloadPDF());
     $('#shareEmail')?.addEventListener('click', () => this.share('email'));
     $('#shareWhatsApp')?.addEventListener('click', () => this.share('whatsapp'));
@@ -74,6 +76,54 @@ class InvoiceGenerator {
     // Global error handler
     window.addEventListener('error', this.handleGlobalError.bind(this));
     window.addEventListener('unhandledrejection', this.handleGlobalError.bind(this));
+  }
+
+  // ========== PWA SETUP ==========
+  setupPWA() {
+    let deferredPrompt;
+    const installPrompt = this.$('#pwaInstallPrompt');
+    const installBtn = this.$('#installPWA');
+    const dismissBtn = this.$('#dismissPWA');
+
+    // Handle beforeinstallprompt event
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // Show custom install prompt after 5 seconds
+      setTimeout(() => {
+        if (installPrompt && !localStorage.getItem('pwa-dismissed')) {
+          installPrompt.style.display = 'block';
+        }
+      }, 5000);
+    });
+
+    // Handle install button click
+    installBtn?.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        
+        if (result.outcome === 'accepted') {
+          this.showToast('برنامه با موفقیت نصب شد', 'success');
+        }
+        
+        deferredPrompt = null;
+        installPrompt.style.display = 'none';
+      }
+    });
+
+    // Handle dismiss button click
+    dismissBtn?.addEventListener('click', () => {
+      localStorage.setItem('pwa-dismissed', 'true');
+      installPrompt.style.display = 'none';
+    });
+
+    // Handle app installation
+    window.addEventListener('appinstalled', () => {
+      this.showToast('برنامه با موفقیت نصب شد', 'success');
+      installPrompt.style.display = 'none';
+    });
   }
 
   // ========== VALIDATION ==========
@@ -490,7 +540,7 @@ class InvoiceGenerator {
         </div>
       ` : '';
       
-      // Generate invoice HTML
+      // Generate invoice HTML with enhanced watermark
       const invoiceHTML = `
         <div class="invoice-header">
           <div class="right-col">
@@ -611,6 +661,49 @@ class InvoiceGenerator {
     servicesListEl.innerHTML = servicesHTML;
   }
 
+  // ========== SAVE INVOICE ==========
+  async saveInvoice() {
+    if (this.services.length === 0) {
+      this.showToast('لطفاً حداقل یک خدمت اضافه کنید', 'error');
+      return;
+    }
+    
+    try {
+      this.showLoading(true);
+      
+      // Save invoice to history without generating PDF
+      await this.saveInvoiceToHistory(false);
+      
+      // Finalize invoice number
+      this.finalizeInvoiceNumber();
+      
+      // Clear current invoice
+      this.clearCurrentInvoice();
+      
+      this.showToast('فاکتور با موفقیت ثبت شد', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در ثبت فاکتور', error);
+    } finally {
+      this.showLoading(false);
+    }
+  }
+
+  clearCurrentInvoice() {
+    // Clear customer info (keep company info)
+    ['customerName', 'customerPhone', 'customerEmail', 'customerAddress'].forEach(field => {
+      const element = this.$(`#${field}`);
+      if (element) element.value = '';
+    });
+    
+    // Clear services and total discount
+    this.services = [];
+    const totalDiscountEl = this.$('#totalDiscount');
+    if (totalDiscountEl) totalDiscountEl.value = '0';
+    
+    this.render();
+  }
+
   // ========== PDF GENERATION ==========
   async downloadPDF() {
     if (this.services.length === 0) {
@@ -628,7 +721,7 @@ class InvoiceGenerator {
       pdf.save(`فاکتور-${invoiceNumber}.pdf`);
       
       // Save invoice to history
-      await this.saveInvoiceToHistory();
+      await this.saveInvoiceToHistory(true);
       
       // Finalize invoice number
       this.finalizeInvoiceNumber();
@@ -648,13 +741,32 @@ class InvoiceGenerator {
       throw new Error('المان پیش‌نمایش فاکتور یافت نشد');
     }
     
-    return await html2canvas(previewElement, {
+    // Temporarily enhance watermark for PDF
+    this.enhanceWatermarkForPDF(true);
+    
+    const canvas = await html2canvas(previewElement, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false
     });
+    
+    // Restore normal watermark
+    this.enhanceWatermarkForPDF(false);
+    
+    return canvas;
+  }
+
+  enhanceWatermarkForPDF(enhance = true) {
+    const previewElement = this.$('#invoicePreview');
+    if (!previewElement) return;
+    
+    if (enhance) {
+      previewElement.classList.add('pdf-watermark');
+    } else {
+      previewElement.classList.remove('pdf-watermark');
+    }
   }
 
   async generatePDFFromCanvas(canvas) {
@@ -689,7 +801,7 @@ class InvoiceGenerator {
   }
 
   // ========== INVOICE HISTORY ==========
-  async saveInvoiceToHistory() {
+  async saveInvoiceToHistory(includePDF = false) {
     try {
       const invoiceData = {
         id: Date.now(),
@@ -704,7 +816,23 @@ class InvoiceGenerator {
         tax: this.getTax(),
         grandTotal: this.getGrandTotal(),
         servicesCount: this.services.length,
-        servicesText: this.services.map(s => s.name).join('، ')
+        servicesText: this.services.map(s => s.name).join('، '),
+        hasPDF: includePDF,
+        companyInfo: {
+          phone: this.$('#companyPhone')?.value || '',
+          email: this.$('#companyEmail')?.value || '',
+          address: this.$('#companyAddress')?.value || ''
+        },
+        customerInfo: {
+          phone: this.$('#customerPhone')?.value || '',
+          email: this.$('#customerEmail')?.value || '',
+          address: this.$('#customerAddress')?.value || ''
+        },
+        bankingInfo: {
+          cardNumber: this.$('#cardNumber')?.value || '',
+          accountNumber: this.$('#accountNumber')?.value || '',
+          ibanNumber: this.$('#ibanNumber')?.value || ''
+        }
       };
       
       this.savedInvoices.unshift(invoiceData);
@@ -847,7 +975,7 @@ class InvoiceGenerator {
         <div class="empty-state">
           <i class="fas fa-search"></i>
           <h3>فاکتوری یافت نشد</h3>
-          <p>برای مشاهده فاکتورها، ابتدا فاکتور جدیدی ایجاد کنید</p>
+          <p>برای مشاهدع فاکتورها، ابتدا فاکتور جدیدی ایجاد کنید</p>
         </div>
       `;
       this.updatePagination();
@@ -865,16 +993,17 @@ class InvoiceGenerator {
           <div class="history-item-customer">${invoice.customerName}</div>
           <div class="history-item-date">${invoice.persianDate}</div>
           <div class="history-item-services">${invoice.servicesCount} خدمت: ${invoice.servicesText}</div>
+          ${!invoice.hasPDF ? '<div class="history-item-status">فقط ثبت شده (بدون PDF)</div>' : ''}
         </div>
         <div class="history-item-amount">${this.formatNumber(invoice.grandTotal)} تومان</div>
         <div class="history-item-actions">
-          <button class="history-btn" onclick="invoiceGenerator.viewInvoice(${invoice.id})">
+          <button class="history-btn" onclick="invoiceGenerator.viewInvoice(${invoice.id})" title="مشاهده">
             <i class="fas fa-eye"></i>
           </button>
-          <button class="history-btn success" onclick="invoiceGenerator.downloadInvoiceAgain(${invoice.id})">
+          <button class="history-btn success" onclick="invoiceGenerator.downloadInvoiceAgain(${invoice.id})" title="دانلود PDF">
             <i class="fas fa-download"></i>
           </button>
-          <button class="history-btn danger" onclick="invoiceGenerator.deleteInvoice(${invoice.id})">
+          <button class="history-btn danger" onclick="invoiceGenerator.deleteInvoice(${invoice.id})" title="حذف">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -926,6 +1055,28 @@ class InvoiceGenerator {
     // Load invoice data to form
     this.services = [...invoice.services];
     
+    // Load customer and company info if available
+    if (invoice.companyInfo) {
+      Object.keys(invoice.companyInfo).forEach(key => {
+        const element = this.$(`#company${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        if (element) element.value = invoice.companyInfo[key];
+      });
+    }
+    
+    if (invoice.customerInfo) {
+      Object.keys(invoice.customerInfo).forEach(key => {
+        const element = this.$(`#customer${key.charAt(0).toUpperCase() + key.slice(1)}`);
+        if (element) element.value = invoice.customerInfo[key];
+      });
+    }
+    
+    if (invoice.bankingInfo) {
+      Object.keys(invoice.bankingInfo).forEach(key => {
+        const element = this.$(`#${key}`);
+        if (element) element.value = invoice.bankingInfo[key];
+      });
+    }
+    
     // Switch to main view
     this.showMain();
     this.showToast('فاکتور بارگذاری شد', 'success');
@@ -940,19 +1091,69 @@ class InvoiceGenerator {
     
     // Temporarily load the invoice to generate PDF
     const originalServices = [...this.services];
-    this.services = [...invoice.services];
-    this.render();
+    const originalFields = {};
+    
+    // Backup current form state
+    const formFields = [
+      'companyName', 'companyPhone', 'companyEmail', 'companyAddress',
+      'customerName', 'customerPhone', 'customerEmail', 'customerAddress',
+      'cardNumber', 'accountNumber', 'ibanNumber', 'totalDiscount'
+    ];
+    
+    formFields.forEach(field => {
+      originalFields[field] = this.$(`#${field}`)?.value || '';
+    });
     
     try {
+      // Load invoice data temporarily
+      this.services = [...invoice.services];
+      
+      // Load form fields
+      this.$('#companyName').value = invoice.companyName;
+      this.$('#customerName').value = invoice.customerName;
+      
+      if (invoice.companyInfo) {
+        Object.keys(invoice.companyInfo).forEach(key => {
+          const element = this.$(`#company${key.charAt(0).toUpperCase() + key.slice(1)}`);
+          if (element) element.value = invoice.companyInfo[key];
+        });
+      }
+      
+      if (invoice.customerInfo) {
+        Object.keys(invoice.customerInfo).forEach(key => {
+          const element = this.$(`#customer${key.charAt(0).toUpperCase() + key.slice(1)}`);
+          if (element) element.value = invoice.customerInfo[key];
+        });
+      }
+      
+      if (invoice.bankingInfo) {
+        Object.keys(invoice.bankingInfo).forEach(key => {
+          const element = this.$(`#${key}`);
+          if (element) element.value = invoice.bankingInfo[key];
+        });
+      }
+      
+      this.render();
+      
       const canvas = await this.generateCanvas();
       const pdf = await this.generatePDFFromCanvas(canvas);
       pdf.save(`فاکتور-${invoice.number}.pdf`);
+      
+      // Update invoice to mark it has PDF
+      invoice.hasPDF = true;
+      localStorage.setItem('savedInvoices', JSON.stringify(this.savedInvoices));
+      
       this.showToast('فایل PDF مجدداً دانلود شد', 'success');
+      
     } catch (error) {
       this.handleError('خطا در دانلود مجدد PDF', error);
     } finally {
-      // Restore original services
+      // Restore original form state
       this.services = originalServices;
+      formFields.forEach(field => {
+        const element = this.$(`#${field}`);
+        if (element) element.value = originalFields[field];
+      });
       this.render();
     }
   }
@@ -1021,14 +1222,15 @@ class InvoiceGenerator {
   }
 
   generateCSV() {
-    const headers = ['شماره فاکتور', 'تاریخ', 'نام شرکت', 'نام مشتری', 'تعداد خدمات', 'مبلغ کل (تومان)'];
+    const headers = ['شماره فاکتور', 'تاریخ', 'نام شرکت', 'نام مشتری', 'تعداد خدمات', 'مبلغ کل (تومان)', 'وضعیت PDF'];
     const rows = this.savedInvoices.map(inv => [
       inv.number,
       inv.persianDate,
       inv.companyName,
       inv.customerName,
       inv.servicesCount,
-      inv.grandTotal
+      inv.grandTotal,
+      inv.hasPDF ? 'دارد' : 'ندارد'
     ]);
     
     const csvContent = [headers, ...rows]
@@ -1162,7 +1364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     invoiceGenerator = new InvoiceGenerator();
     window.invoiceGenerator = invoiceGenerator;
     
-    console.log('Invoice Generator v2.0.0 initialized successfully');
+    console.log('Invoice Generator v2.0.1 initialized successfully');
   } catch (error) {
     console.error('Failed to initialize Invoice Generator:', error);
     alert('خطا در بارگذاری برنامه. لطفاً صفحه را مجدداً بارگذاری کنید.');
@@ -1188,3 +1390,21 @@ window.addEventListener('beforeunload', () => {
     invoiceGenerator.destroy();
   }
 });
+
+// Handle PWA installation prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+// Handle shortcuts from PWA
+if (new URL(location).searchParams.get('action') === 'history') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      if (invoiceGenerator) {
+        invoiceGenerator.showHistory();
+      }
+    }, 1000);
+  });
+}
