@@ -1,0 +1,17 @@
+name = "invoice-generator"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[site]
+bucket = "./"
+entry-point = "./"
+
+[[kv_namespaces]]
+binding = "INVOICE_DATA"
+preview_id = "preview_id_placeholder"
+id = "production_id_placeholder"
+
+[env.production]
+
+[env.staging]
