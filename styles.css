@@ -130,7 +130,19 @@ section h2 {
     gap: 12px;
 }
 
-section h2 i {
+section h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 20px 0 15px 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+section h2 i, section h3 i {
     color: var(--accent-color);
 }
 
@@ -179,10 +191,22 @@ textarea {
     min-height: 80px;
 }
 
+/* Card number formatting */
+#cardNumber {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+#ibanNumber {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
 /* Service Controls */
 .service-input-group {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr 1.5fr auto;
+    grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr auto;
     gap: 12px;
     align-items: end;
 }
@@ -266,6 +290,19 @@ textarea {
     transform: translateY(-2px);
 }
 
+/* Total Discount Section */
+.total-discount-section {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.total-discount-section .form-group {
+    max-width: 300px;
+}
+
 /* Invoice Actions */
 .invoice-actions {
     display: flex;
@@ -340,6 +377,7 @@ textarea {
     font-size: 1.2rem;
     font-weight: 600;
     color: #666;
+    font-family: 'Courier New', monospace;
 }
 
 .invoice-date {
@@ -363,6 +401,31 @@ textarea {
 .info-content {
     line-height: 1.8;
     color: #333;
+}
+
+.banking-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    border-right: 4px solid var(--accent-color);
+}
+
+.banking-info .bank-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-family: 'Courier New', monospace;
+}
+
+.banking-info .bank-item:last-child {
+    margin-bottom: 0;
+}
+
+.bank-label {
+    font-weight: 600;
+    color: #666;
+    font-family: 'Vazirmatn', sans-serif;
 }
 
 .services-table {
@@ -391,6 +454,64 @@ textarea {
 
 .services-table tr:nth-child(even) {
     background: #f8f9fa;
+}
+
+.discount-row {
+    background-color: #fff3cd !important;
+    color: #856404;
+    font-weight: 600;
+}
+
+.tax-row {
+    background-color: #d4edda !important;
+    color: #155724;
+    font-weight: 600;
+}
+
+.total-row {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover)) !important;
+    color: white !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.invoice-calculations {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 30px;
+}
+
+.calculations-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    min-width: 300px;
+    border: 1px solid #e9ecef;
+}
+
+.calc-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.calc-row:last-child {
+    border-bottom: 2px solid var(--accent-color);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--accent-color);
+    margin-top: 10px;
+    padding-top: 15px;
+}
+
+.calc-row.discount-calc {
+    color: #dc3545;
+}
+
+.calc-row.tax-calc {
+    color: #28a745;
 }
 
 .invoice-total {
@@ -461,6 +582,10 @@ textarea {
     .services-table th,
     .services-table td {
         padding: 8px;
+    }
+    
+    .calculations-box {
+        min-width: 100%;
     }
 }
 
