@@ -21,6 +21,10 @@ class InvoiceGenerator {
             input.addEventListener('input', this.generatePreview.bind(this));
         });
         
+        // Card number formatting
+        document.getElementById('cardNumber').addEventListener('input', this.formatCardNumber.bind(this));
+        document.getElementById('ibanNumber').addEventListener('input', this.formatIBAN.bind(this));
+        
         // Action buttons
         document.getElementById('generatePDF').addEventListener('click', this.generatePDF.bind(this));
         document.getElementById('shareEmail').addEventListener('click', this.shareEmail.bind(this));
@@ -29,6 +33,25 @@ class InvoiceGenerator {
         
         // Auto-save
         setInterval(this.saveData.bind(this), 10000); // Save every 10 seconds
+    }
+
+    formatCardNumber(event) {
+        let value = event.target.value.replace(/\D/g, '');
+        value = value.replace(/(\d{4})(?=\d)/g, '$1-');
+        if (value.length > 19) value = value.slice(0, 19);
+        event.target.value = value;
+    }
+
+    formatIBAN(event) {
+        let value = event.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+        if (!value.startsWith('IR')) {
+            value = 'IR' + value;
+        }
+        if (value.length > 2) {
+            value = value.slice(0, 2) + value.slice(2).replace(/(\d{4})(?=\d)/g, '$1-');
+        }
+        if (value.length > 26) value = value.slice(0, 26);
+        event.target.value = value;
     }
 
     toggleTheme() {
@@ -73,22 +96,31 @@ class InvoiceGenerator {
         const customService = document.getElementById('customService');
         const quantity = document.getElementById('serviceQuantity');
         const price = document.getElementById('servicePrice');
+        const discount = document.getElementById('serviceDiscount');
         
         const serviceName = customService.value.trim() || serviceSelect.value;
         const serviceQuantity = parseInt(quantity.value) || 1;
         const servicePrice = parseFloat(price.value) || 0;
+        const serviceDiscount = parseFloat(discount.value) || 0;
         
         if (!serviceName || servicePrice <= 0) {
             alert('لطفاً نام خدمت و قیمت را وارد کنید');
             return;
         }
         
+        const baseTotal = serviceQuantity * servicePrice;
+        const discountAmount = (baseTotal * serviceDiscount) / 100;
+        const finalTotal = baseTotal - discountAmount;
+        
         const service = {
             id: Date.now(),
             name: serviceName,
             quantity: serviceQuantity,
             price: servicePrice,
-            total: serviceQuantity * servicePrice
+            discount: serviceDiscount,
+            baseTotal: baseTotal,
+            discountAmount: discountAmount,
+            total: finalTotal
         };
         
         this.services.push(service);
@@ -110,10 +142,16 @@ class InvoiceGenerator {
         this.services.forEach(service => {
             const serviceElement = document.createElement('div');
             serviceElement.className = 'service-item';
+            
+            let discountInfo = '';
+            if (service.discount > 0) {
+                discountInfo = ` (تخفیف ${service.discount}%)`;
+            }
+            
             serviceElement.innerHTML = `
                 <div class="service-details">
                     <div class="service-name">${service.name}</div>
-                    <div class="service-info">${service.quantity} × ${this.formatPrice(service.price)} تومان</div>
+                    <div class="service-info">${service.quantity} × ${this.formatPrice(service.price)} تومان${discountInfo}</div>
                 </div>
                 <div class="service-total">${this.formatPrice(service.total)} تومان</div>
                 <button class="remove-btn" onclick="invoiceGenerator.removeService(${service.id})">
@@ -129,16 +167,20 @@ class InvoiceGenerator {
         document.getElementById('customService').value = '';
         document.getElementById('serviceQuantity').value = '1';
         document.getElementById('servicePrice').value = '';
+        document.getElementById('serviceDiscount').value = '0';
     }
 
+    // Generate Persian date-based invoice number: 404727-001
     generateInvoiceNumber() {
         const now = new Date();
         const persianDate = this.getPersianDate(now);
-        const dateStr = persianDate.year.toString().slice(-2) + 
+        
+        // Format: YYMMDD-XXX (404727-001)
+        const dateStr = (persianDate.year % 100).toString().padStart(2, '0') + 
                        persianDate.month.toString().padStart(2, '0') + 
                        persianDate.day.toString().padStart(2, '0');
         
-        return `INV-${dateStr}-${this.invoiceCounter.toString().padStart(4, '0')}`;
+        return `${dateStr}-${this.invoiceCounter.toString().padStart(3, '0')}`;
     }
 
     getPersianDate(date) {
@@ -160,8 +202,28 @@ class InvoiceGenerator {
         return new Intl.NumberFormat('fa-IR').format(price);
     }
 
-    calculateTotal() {
+    calculateSubtotal() {
         return this.services.reduce((total, service) => total + service.total, 0);
+    }
+
+    calculateTotalDiscount() {
+        const totalDiscountPercent = parseFloat(document.getElementById('totalDiscount').value) || 0;
+        const subtotal = this.calculateSubtotal();
+        return (subtotal * totalDiscountPercent) / 100;
+    }
+
+    calculateTax() {
+        const subtotal = this.calculateSubtotal();
+        const totalDiscount = this.calculateTotalDiscount();
+        const taxableAmount = subtotal - totalDiscount;
+        return (taxableAmount * 10) / 100; // 10% tax
+    }
+
+    calculateFinalTotal() {
+        const subtotal = this.calculateSubtotal();
+        const totalDiscount = this.calculateTotalDiscount();
+        const tax = this.calculateTax();
+        return subtotal - totalDiscount + tax;
     }
 
     generatePreview() {
@@ -174,12 +236,19 @@ class InvoiceGenerator {
         const companyEmail = document.getElementById('companyEmail').value;
         const companyAddress = document.getElementById('companyAddress').value;
         
+        const cardNumber = document.getElementById('cardNumber').value;
+        const accountNumber = document.getElementById('accountNumber').value;
+        const ibanNumber = document.getElementById('ibanNumber').value;
+        
         const customerName = document.getElementById('customerName').value || 'نام مشتری';
         const customerPhone = document.getElementById('customerPhone').value;
         const customerEmail = document.getElementById('customerEmail').value;
         const customerAddress = document.getElementById('customerAddress').value;
         
-        const total = this.calculateTotal();
+        const subtotal = this.calculateSubtotal();
+        const totalDiscount = this.calculateTotalDiscount();
+        const tax = this.calculateTax();
+        const finalTotal = this.calculateFinalTotal();
         
         let servicesTableRows = '';
         this.services.forEach((service, index) => {
@@ -189,10 +258,24 @@ class InvoiceGenerator {
                     <td>${service.name}</td>
                     <td>${service.quantity}</td>
                     <td>${this.formatPrice(service.price)}</td>
+                    <td>${service.discount > 0 ? service.discount + '%' : '-'}</td>
                     <td>${this.formatPrice(service.total)}</td>
                 </tr>
             `;
         });
+        
+        // Banking information section
+        let bankingInfo = '';
+        if (cardNumber || accountNumber || ibanNumber) {
+            bankingInfo = `
+                <div class="banking-info">
+                    <div class="info-title">اطلاعات بانکی</div>
+                    ${cardNumber ? `<div class="bank-item"><span class="bank-label">شماره کارت:</span> <span>${cardNumber}</span></div>` : ''}
+                    ${accountNumber ? `<div class="bank-item"><span class="bank-label">شماره حساب:</span> <span>${accountNumber}</span></div>` : ''}
+                    ${ibanNumber ? `<div class="bank-item"><span class="bank-label">شماره شبا:</span> <span>${ibanNumber}</span></div>` : ''}
+                </div>
+            `;
+        }
         
         preview.innerHTML = `
             <div class="invoice-header">
@@ -210,6 +293,7 @@ class InvoiceGenerator {
                             ${companyEmail ? `ایمیل: ${companyEmail}<br>` : ''}
                             ${companyAddress ? `آدرس: ${companyAddress}` : ''}
                         </div>
+                        ${bankingInfo}
                     </div>
                 </div>
             </div>
@@ -232,7 +316,8 @@ class InvoiceGenerator {
                             <th>شرح خدمات</th>
                             <th>تعداد</th>
                             <th>قیمت واحد (تومان)</th>
-                            <th>مبلغ کل (تومان)</th>
+                            <th>تخفیف</th>
+                            <th>مبلغ (تومان)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -240,10 +325,26 @@ class InvoiceGenerator {
                     </tbody>
                 </table>
                 
-                <div class="invoice-total">
-                    <div class="total-box">
-                        <div class="total-label">مبلغ کل قابل پرداخت</div>
-                        <div class="total-amount">${this.formatPrice(total)} تومان</div>
+                <div class="invoice-calculations">
+                    <div class="calculations-box">
+                        <div class="calc-row">
+                            <span>جمع کل:</span>
+                            <span>${this.formatPrice(subtotal)} تومان</span>
+                        </div>
+                        ${totalDiscount > 0 ? `
+                        <div class="calc-row discount-calc">
+                            <span>تخفیف کلی:</span>
+                            <span>-${this.formatPrice(totalDiscount)} تومان</span>
+                        </div>
+                        ` : ''}
+                        <div class="calc-row tax-calc">
+                            <span>مالیات (10%):</span>
+                            <span>+${this.formatPrice(tax)} تومان</span>
+                        </div>
+                        <div class="calc-row">
+                            <span>مبلغ کل قابل پرداخت:</span>
+                            <span>${this.formatPrice(finalTotal)} تومان</span>
+                        </div>
                     </div>
                 </div>
             ` : '<p style="text-align: center; color: #666; font-style: italic;">هیچ خدمتی اضافه نشده است</p>'}
@@ -302,7 +403,7 @@ class InvoiceGenerator {
         const customerEmail = document.getElementById('customerEmail').value;
         const companyName = document.getElementById('companyName').value || 'شرکت';
         const invoiceNumber = this.generateInvoiceNumber();
-        const total = this.formatPrice(this.calculateTotal());
+        const total = this.formatPrice(this.calculateFinalTotal());
         
         const subject = `فاکتور ${invoiceNumber} از ${companyName}`;
         const body = `سلام،\n\nفاکتور شماره ${invoiceNumber} به مبلغ ${total} تومان آماده شده است.\n\nبا تشکر\n${companyName}`;
@@ -314,7 +415,7 @@ class InvoiceGenerator {
     shareWhatsApp() {
         const companyName = document.getElementById('companyName').value || 'شرکت';
         const invoiceNumber = this.generateInvoiceNumber();
-        const total = this.formatPrice(this.calculateTotal());
+        const total = this.formatPrice(this.calculateFinalTotal());
         
         const message = `سلام،\n\nفاکتور شماره ${invoiceNumber} از ${companyName} به مبلغ ${total} تومان آماده شده است.\n\nبا تشکر`;
         const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
@@ -324,7 +425,7 @@ class InvoiceGenerator {
     shareTelegram() {
         const companyName = document.getElementById('companyName').value || 'شرکت';
         const invoiceNumber = this.generateInvoiceNumber();
-        const total = this.formatPrice(this.calculateTotal());
+        const total = this.formatPrice(this.calculateFinalTotal());
         
         const message = `سلام،\n\nفاکتور شماره ${invoiceNumber} از ${companyName} به مبلغ ${total} تومان آماده شده است.\n\nبا تشکر`;
         const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(' ')}&text=${encodeURIComponent(message)}`;
@@ -347,6 +448,9 @@ class InvoiceGenerator {
             companyPhone: document.getElementById('companyPhone').value,
             companyEmail: document.getElementById('companyEmail').value,
             companyAddress: document.getElementById('companyAddress').value,
+            cardNumber: document.getElementById('cardNumber').value,
+            accountNumber: document.getElementById('accountNumber').value,
+            ibanNumber: document.getElementById('ibanNumber').value,
             services: this.services
         };
         localStorage.setItem('invoiceData', JSON.stringify(data));
@@ -362,6 +466,9 @@ class InvoiceGenerator {
                 if (data.companyPhone) document.getElementById('companyPhone').value = data.companyPhone;
                 if (data.companyEmail) document.getElementById('companyEmail').value = data.companyEmail;
                 if (data.companyAddress) document.getElementById('companyAddress').value = data.companyAddress;
+                if (data.cardNumber) document.getElementById('cardNumber').value = data.cardNumber;
+                if (data.accountNumber) document.getElementById('accountNumber').value = data.accountNumber;
+                if (data.ibanNumber) document.getElementById('ibanNumber').value = data.ibanNumber;
                 
                 if (data.services) {
                     this.services = data.services;
