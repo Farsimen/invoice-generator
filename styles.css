@@ -367,25 +367,49 @@ textarea {
     background: #dc2626;
 }
 
-/* Total Discount Section - IMPROVED WITH LABEL */
-.total-discount-section {
+/* Total Discount and Notes Section - IMPROVED LAYOUT */
+.total-discount-notes-section {
     margin-top: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
     padding: 20px;
     background: var(--bg-secondary);
     border-radius: 12px;
     border: 1px solid var(--border-color);
 }
 
-.total-discount-section .form-group {
-    max-width: 300px;
+.discount-group, .notes-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.total-discount-section label {
-    font-weight: 500;
+.discount-group h3, .notes-group h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0 0 15px 0;
     color: var(--text-primary);
-    font-size: 0.95rem;
-    margin-bottom: 8px;
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.discount-group h3 i, .notes-group h3 i {
+    color: var(--accent-color);
+}
+
+.discount-group .form-group {
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .total-discount-notes-section {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
 }
 
 /* Invoice Actions */
@@ -466,7 +490,7 @@ textarea {
     overflow: hidden;
 }
 
-/* Watermark for PDF */
+/* Enhanced Watermark for PDF with Lollipop Pattern */
 .invoice-preview::before {
     content: '';
     position: absolute;
@@ -475,14 +499,26 @@ textarea {
     right: 0;
     bottom: 0;
     background-image: 
-        radial-gradient(circle at 20px 20px, rgba(59, 130, 246, 0.03) 2px, transparent 2px),
-        radial-gradient(circle at 60px 60px, rgba(59, 130, 246, 0.03) 2px, transparent 2px),
-        radial-gradient(circle at 100px 20px, rgba(59, 130, 246, 0.03) 2px, transparent 2px),
-        radial-gradient(circle at 140px 60px, rgba(59, 130, 246, 0.03) 2px, transparent 2px);
-    background-size: 80px 80px, 80px 80px, 80px 80px, 80px 80px;
-    background-position: 0 0, 40px 40px, 20px 0, 60px 40px;
+        radial-gradient(circle at 15px 15px, rgba(59, 130, 246, 0.06) 8px, transparent 8px),
+        radial-gradient(circle at 45px 45px, rgba(16, 185, 129, 0.04) 6px, transparent 6px),
+        radial-gradient(circle at 75px 15px, rgba(245, 158, 11, 0.05) 7px, transparent 7px),
+        radial-gradient(circle at 105px 45px, rgba(239, 68, 68, 0.04) 5px, transparent 5px),
+        radial-gradient(circle at 135px 15px, rgba(6, 182, 212, 0.06) 8px, transparent 8px);
+    background-size: 120px 60px;
+    background-position: 0 0, 30px 15px, 60px 0, 90px 15px, 120px 0;
     pointer-events: none;
     z-index: 0;
+}
+
+/* Enhanced watermark for PDF generation */
+.invoice-preview.pdf-watermark::before {
+    background-image: 
+        radial-gradient(circle at 15px 15px, rgba(59, 130, 246, 0.15) 8px, transparent 8px),
+        radial-gradient(circle at 45px 45px, rgba(16, 185, 129, 0.12) 6px, transparent 6px),
+        radial-gradient(circle at 75px 15px, rgba(245, 158, 11, 0.14) 7px, transparent 7px),
+        radial-gradient(circle at 105px 45px, rgba(239, 68, 68, 0.11) 5px, transparent 5px),
+        radial-gradient(circle at 135px 15px, rgba(6, 182, 212, 0.13) 8px, transparent 8px);
+    background-size: 80px 40px;
 }
 
 .invoice-preview > * {
@@ -490,22 +526,21 @@ textarea {
     z-index: 1;
 }
 
-/* Two-column header layout */
+/* NEW INVOICE LAYOUT - Redesigned header */
 .invoice-header {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
-    align-items: flex-start;
     margin-bottom: 30px;
     border-bottom: 3px solid var(--accent-color);
     padding-bottom: 20px;
 }
 
-.right-col {
+.invoice-header .customer-section {
     text-align: right;
 }
 
-.left-col {
+.invoice-header .invoice-info-section {
     text-align: left;
 }
 
@@ -530,8 +565,18 @@ textarea {
     margin-bottom: 20px;
 }
 
-.company-info, .customer-info {
+/* Second row - Company and Banking info */
+.invoice-secondary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
     margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.company-info, .customer-info, .banking-section {
+    margin-bottom: 20px;
 }
 
 .info-title {
@@ -618,6 +663,31 @@ textarea {
     color: white !important;
     font-weight: 700;
     font-size: 1.1rem;
+}
+
+/* Invoice Notes Section */
+.invoice-notes {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-right: 4px solid var(--info-color);
+}
+
+.invoice-notes .notes-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--info-color);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.invoice-notes .notes-content {
+    color: #555;
+    line-height: 1.6;
+    white-space: pre-wrap;
 }
 
 .invoice-calculations {
@@ -792,6 +862,12 @@ textarea {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.history-item-status {
+    font-size: 0.8rem;
+    color: var(--warning-color);
+    font-style: italic;
 }
 
 .history-item-amount {
@@ -1058,6 +1134,11 @@ textarea {
         text-align: center;
         gap: 20px;
     }
+
+    .invoice-secondary {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
     
     .services-table {
         font-size: 0.85rem;
@@ -1185,7 +1266,7 @@ textarea {
     }
 
     .invoice-preview::before {
-        background-size: 40px 40px, 40px 40px, 40px 40px, 40px 40px;
-        opacity: 0.7;
+        background-size: 60px 30px;
+        opacity: 0.8;
     }
 }
