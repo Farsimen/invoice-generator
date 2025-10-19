@@ -1,143 +1,1190 @@
+/**
+ * Enhanced Invoice Generator with History, Validation, and PWA Support
+ * Author: Farsimen
+ * Version: 2.0.0
+ */
+
 class InvoiceGenerator {
   constructor() {
     this.services = [];
     this.invoiceCounter = this.getInvoiceCounter();
-    this.currentInvoiceNumber = null; // freeze until PDF saved
-    this.bind();
-    this.restore();
+    this.currentInvoiceNumber = null;
+    this.savedInvoices = this.getSavedInvoices();
+    this.currentPage = 1;
+    this.itemsPerPage = 10;
+    this.filteredInvoices = [];
+    this.autoSaveInterval = null;
+    
+    this.init();
+  }
+
+  // ========== INITIALIZATION ==========
+  init() {
+    this.bindEvents();
+    this.restoreData();
     this.applyTheme();
     this.render();
+    this.startAutoSave();
+    this.setupValidation();
   }
 
-  // ---------- SAFE PERSIAN DATE HELPERS ----------
-  getPersianParts(date) {
-    const fmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', {
-      year: '2-digit', month: '2-digit', day: '2-digit'
+  bindEvents() {
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => document.querySelectorAll(sel);
+    this.$ = $;
+    this.$$ = $$;
+
+    // Navigation
+    $('#viewHistoryBtn')?.addEventListener('click', () => this.showHistory());
+    $('#backToMainBtn')?.addEventListener('click', () => this.showMain());
+    
+    // Theme
+    $('#themeToggle')?.addEventListener('click', () => this.toggleTheme());
+    
+    // Services
+    $('#addService')?.addEventListener('click', () => this.addService());
+    $('#serviceSelect')?.addEventListener('change', () => this.handleServiceSelect());
+    
+    // Input validation and formatting
+    $('#cardNumber')?.addEventListener('input', this.formatCardNumber.bind(this));
+    $('#ibanNumber')?.addEventListener('input', this.formatIban.bind(this));
+    
+    // Real-time rendering
+    $$('input, textarea, select').forEach(el => {
+      el.addEventListener('input', this.debounce(() => this.render(), 300));
     });
-    const parts = fmt.formatToParts(date);
-    const y = parseInt(parts.find(p=>p.type==='year').value,10);
-    const m = parseInt(parts.find(p=>p.type==='month').value,10);
-    const d = parseInt(parts.find(p=>p.type==='day').value,10);
-    return { y, m, d };
-  }
-  getDateStr() {
-    const {y,m,d} = this.getPersianParts(new Date());
-    return y.toString().padStart(2,'0') + m.toString().padStart(2,'0') + d.toString().padStart(2,'0');
+    
+    // PDF and sharing
+    $('#generatePDF')?.addEventListener('click', () => this.downloadPDF());
+    $('#shareEmail')?.addEventListener('click', () => this.share('email'));
+    $('#shareWhatsApp')?.addEventListener('click', () => this.share('whatsapp'));
+    $('#shareTelegram')?.addEventListener('click', () => this.share('telegram'));
+    
+    // History management
+    $('#clearHistoryBtn')?.addEventListener('click', () => this.clearHistory());
+    $('#exportHistoryBtn')?.addEventListener('click', () => this.exportHistory());
+    $('#searchInvoices')?.addEventListener('input', this.debounce(() => this.filterInvoices(), 300));
+    $('#filterPeriod')?.addEventListener('change', () => this.filterInvoices());
+    $('#sortBy')?.addEventListener('change', () => this.filterInvoices());
+    
+    // Pagination
+    $('#prevPageBtn')?.addEventListener('click', () => this.changePage(-1));
+    $('#nextPageBtn')?.addEventListener('click', () => this.changePage(1));
+
+    // Global error handler
+    window.addEventListener('error', this.handleGlobalError.bind(this));
+    window.addEventListener('unhandledrejection', this.handleGlobalError.bind(this));
   }
 
-  // ---------- INVOICE NUMBER ----------
+  // ========== VALIDATION ==========
+  setupValidation() {
+    const validationRules = {
+      companyName: { required: false, minLength: 2 },
+      companyPhone: { required: false, pattern: /^[0-9+\-\s()]+$/ },
+      companyEmail: { required: false, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+      customerName: { required: false, minLength: 2 },
+      customerPhone: { required: false, pattern: /^[0-9+\-\s()]+$/ },
+      customerEmail: { required: false, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+      cardNumber: { required: false, pattern: /^[0-9\-]+$/, length: 19 },
+      ibanNumber: { required: false, pattern: /^IR[0-9\-]+$/, maxLength: 26 }
+    };
+
+    Object.keys(validationRules).forEach(fieldId => {
+      const field = this.$(`#${fieldId}`);
+      if (field) {
+        field.addEventListener('blur', () => this.validateField(fieldId, validationRules[fieldId]));
+      }
+    });
+  }
+
+  validateField(fieldId, rules) {
+    const field = this.$(`#${fieldId}`);
+    const value = field?.value?.trim();
+    
+    if (!field) return true;
+
+    let isValid = true;
+    let errorMessage = '';
+
+    if (rules.required && !value) {
+      isValid = false;
+      errorMessage = 'این فیلد الزامی است';
+    } else if (value) {
+      if (rules.minLength && value.length < rules.minLength) {
+        isValid = false;
+        errorMessage = `حداقل ${rules.minLength} کاراکتر وارد کنید`;
+      }
+      if (rules.maxLength && value.length > rules.maxLength) {
+        isValid = false;
+        errorMessage = `حداکثر ${rules.maxLength} کاراکتر مجاز است`;
+      }
+      if (rules.length && value.length !== rules.length) {
+        isValid = false;
+        errorMessage = `باید دقیقاً ${rules.length} کاراکتر باشد`;
+      }
+      if (rules.pattern && !rules.pattern.test(value)) {
+        isValid = false;
+        errorMessage = 'فرمت وارد شده صحیح نیست';
+      }
+    }
+
+    this.showFieldValidation(field, isValid, errorMessage);
+    return isValid;
+  }
+
+  showFieldValidation(field, isValid, message) {
+    field.classList.toggle('valid', isValid && field.value.trim());
+    field.classList.toggle('invalid', !isValid);
+    
+    // Remove existing error message
+    const existingError = field.parentNode.querySelector('.validation-error');
+    if (existingError) {
+      existingError.remove();
+    }
+
+    // Show error message
+    if (!isValid && message) {
+      const errorEl = document.createElement('div');
+      errorEl.className = 'validation-error';
+      errorEl.textContent = message;
+      errorEl.style.color = 'var(--danger-color)';
+      errorEl.style.fontSize = '0.85rem';
+      errorEl.style.marginTop = '4px';
+      field.parentNode.appendChild(errorEl);
+    }
+  }
+
+  // ========== PERSIAN DATE UTILITIES ==========
+  getPersianParts(date) {
+    try {
+      const fmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', {
+        year: '2-digit', month: '2-digit', day: '2-digit'
+      });
+      const parts = fmt.formatToParts(date);
+      const y = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+      const m = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
+      const d = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+      return { y, m, d };
+    } catch (error) {
+      this.handleError('خطا در تبدیل تاریخ', error);
+      const now = new Date();
+      return { y: now.getFullYear() % 100, m: now.getMonth() + 1, d: now.getDate() };
+    }
+  }
+
+  getDateStr() {
+    const { y, m, d } = this.getPersianParts(new Date());
+    return y.toString().padStart(2, '0') + 
+           m.toString().padStart(2, '0') + 
+           d.toString().padStart(2, '0');
+  }
+
+  getPersianDate(date = new Date()) {
+    try {
+      return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(date);
+    } catch (error) {
+      return new Date().toLocaleDateString('fa-IR');
+    }
+  }
+
+  // ========== INVOICE NUMBER MANAGEMENT ==========
   getInvoiceNumber() {
     if (this.currentInvoiceNumber) return this.currentInvoiceNumber;
+    
     const code = this.getDateStr();
-    this.currentInvoiceNumber = `${code}-${this.invoiceCounter.toString().padStart(3,'0')}`;
+    this.currentInvoiceNumber = `${code}-${this.invoiceCounter.toString().padStart(3, '0')}`;
     return this.currentInvoiceNumber;
   }
-  finalizeAfterPDF() {
-    this.invoiceCounter++;
-    localStorage.setItem('invoiceCounter', String(this.invoiceCounter));
-    this.currentInvoiceNumber = null;
+
+  finalizeInvoiceNumber() {
+    if (this.currentInvoiceNumber) {
+      this.invoiceCounter++;
+      localStorage.setItem('invoiceCounter', String(this.invoiceCounter));
+      this.currentInvoiceNumber = null;
+      return true;
+    }
+    return false;
   }
 
-  // ---------- BIND & RESTORE ----------
-  bind() {
-    const $ = sel => document.querySelector(sel);
-    this.$ = $;
-    $('#themeToggle').addEventListener('click', ()=>this.toggleTheme());
-    $('#addService').addEventListener('click', ()=>this.addService());
-    $('#serviceSelect').addEventListener('change', ()=>{
-      const s = $('#serviceSelect'); const c = $('#customService'); if (s.value) { c.value = s.value; s.value=''; }
-    });
-    document.querySelectorAll('input,textarea,select').forEach(i=>{
-      i.addEventListener('input', ()=>this.render());
-    });
-    $('#cardNumber').addEventListener('input', e=>{ let v=e.target.value.replace(/\D/g,''); v=v.replace(/(\d{4})(?=\d)/g,'$1-'); e.target.value=v.slice(0,19); });
-    $('#ibanNumber').addEventListener('input', e=>{ let v=e.target.value.replace(/[^A-Z0-9]/gi,'').toUpperCase(); if(!v.startsWith('IR')) v='IR'+v; if(v.length>2) v=v.slice(0,2)+v.slice(2).replace(/(\d{4})(?=\d)/g,'$1-'); e.target.value=v.slice(0,26); });
-    $('#generatePDF').addEventListener('click', ()=>this.downloadPDF());
-    $('#shareEmail').addEventListener('click', ()=>this.share('email'));
-    $('#shareWhatsApp').addEventListener('click', ()=>this.share('whatsapp'));
-    $('#shareTelegram').addEventListener('click', ()=>this.share('telegram'));
-    setInterval(()=>this.persist(), 10000);
+  getInvoiceCounter() {
+    try {
+      const counter = localStorage.getItem('invoiceCounter');
+      return counter ? parseInt(counter, 10) : 1;
+    } catch (error) {
+      this.handleError('خطا در بارگذاری شمارنده فاکتور', error);
+      return 1;
+    }
   }
 
-  restore() {
-    try{ const s=localStorage.getItem('invoiceData'); if(!s) return; const d=JSON.parse(s);
-      ['companyName','companyPhone','companyEmail','companyAddress','cardNumber','accountNumber','ibanNumber','customerName','customerPhone','customerEmail','customerAddress'].forEach(k=>{ if(d[k]) this.$('#'+k).value=d[k]; });
-      if (Array.isArray(d.services)) { this.services=d.services; }
-    }catch(e){ console.warn('restore failed', e); }
+  // ========== DATA PERSISTENCE ==========
+  restoreData() {
+    try {
+      const data = localStorage.getItem('invoiceData');
+      if (!data) return;
+      
+      const parsed = JSON.parse(data);
+      
+      // Restore form fields
+      const fields = [
+        'companyName', 'companyPhone', 'companyEmail', 'companyAddress',
+        'cardNumber', 'accountNumber', 'ibanNumber',
+        'customerName', 'customerPhone', 'customerEmail', 'customerAddress',
+        'totalDiscount'
+      ];
+      
+      fields.forEach(field => {
+        const element = this.$(`#${field}`);
+        if (element && parsed[field]) {
+          element.value = parsed[field];
+        }
+      });
+      
+      // Restore services
+      if (Array.isArray(parsed.services)) {
+        this.services = parsed.services;
+      }
+      
+      this.showToast('اطلاعات بازیابی شد', 'success');
+    } catch (error) {
+      this.handleError('خطا در بازیابی اطلاعات', error);
+    }
   }
-  persist() {
-    const d={};
-    ['companyName','companyPhone','companyEmail','companyAddress','cardNumber','accountNumber','ibanNumber','customerName','customerPhone','customerEmail','customerAddress'].forEach(k=> d[k]=this.$('#'+k).value);
-    d.services=this.services; localStorage.setItem('invoiceData', JSON.stringify(d));
+
+  persistData() {
+    try {
+      const data = {
+        timestamp: Date.now(),
+        services: this.services
+      };
+      
+      // Save form fields
+      const fields = [
+        'companyName', 'companyPhone', 'companyEmail', 'companyAddress',
+        'cardNumber', 'accountNumber', 'ibanNumber',
+        'customerName', 'customerPhone', 'customerEmail', 'customerAddress',
+        'totalDiscount'
+      ];
+      
+      fields.forEach(field => {
+        const element = this.$(`#${field}`);
+        if (element) {
+          data[field] = element.value;
+        }
+      });
+      
+      localStorage.setItem('invoiceData', JSON.stringify(data));
+    } catch (error) {
+      this.handleError('خطا در ذخیره اطلاعات', error);
+    }
   }
 
-  // ---------- THEME ----------
-  toggleTheme(){ const b=document.body, i=this.$('#themeToggle i'); if(b.hasAttribute('data-theme')){b.removeAttribute('data-theme'); localStorage.setItem('theme','light'); i.className='fas fa-moon';} else { b.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); i.className='fas fa-sun'; } }
-  applyTheme(){ const t=localStorage.getItem('theme'); if(t==='dark'){ document.body.setAttribute('data-theme','dark'); this.$('#themeToggle i').className='fas fa-sun'; } }
-
-  // ---------- SERVICES ----------
-  addService(){
-    const name=(this.$('#customService').value.trim()||this.$('#serviceSelect').value);
-    const qty=parseInt(this.$('#serviceQuantity').value||'1',10);
-    const price=parseFloat(this.$('#servicePrice').value||'0');
-    const disc=parseFloat(this.$('#serviceDiscount').value||'0');
-    if(!name || price<=0) { alert('نام خدمت و قیمت را وارد کنید'); return; }
-    const base=qty*price, discAmt=base*disc/100, total=base-discAmt;
-    this.services.push({id:Date.now(),name,quantity:qty,price,discount:disc,total});
-    this.$('#customService').value=''; this.$('#serviceSelect').value=''; this.$('#serviceQuantity').value='1'; this.$('#servicePrice').value=''; this.$('#serviceDiscount').value='0';
-    this.render();
+  startAutoSave() {
+    this.autoSaveInterval = setInterval(() => {
+      this.persistData();
+    }, 10000); // Every 10 seconds
   }
-  removeService(id){ this.services=this.services.filter(s=>s.id!==id); this.render(); }
 
-  // ---------- CALC ----------
-  nf(n){ return new Intl.NumberFormat('fa-IR').format(n); }
-  subtotal(){ return this.services.reduce((t,s)=>t+s.total,0); }
-  totalDiscount(){ const p=parseFloat(this.$('#totalDiscount').value||'0'); return this.subtotal()*p/100; }
-  tax(){ return (this.subtotal()-this.totalDiscount())*0.10; }
-  grand(){ return this.subtotal()-this.totalDiscount()+this.tax(); }
+  // ========== THEME MANAGEMENT ==========
+  toggleTheme() {
+    const body = document.body;
+    const themeIcon = this.$('#themeToggle i');
+    
+    if (body.hasAttribute('data-theme')) {
+      body.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+      themeIcon.className = 'fas fa-moon';
+    } else {
+      body.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+      themeIcon.className = 'fas fa-sun';
+    }
+  }
 
-  // ---------- RENDER ----------
-  render(){
-    const ivn=this.getInvoiceNumber();
-    const today=new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-    const cName=this.$('#companyName').value||'نام شرکت';
-    const cPhone=this.$('#companyPhone').value, cEmail=this.$('#companyEmail').value, cAddr=this.$('#companyAddress').value;
-    const card=this.$('#cardNumber').value, acc=this.$('#accountNumber').value, iban=this.$('#ibanNumber').value;
-    const uName=this.$('#customerName').value||'نام مشتری', uPhone=this.$('#customerPhone').value, uEmail=this.$('#customerEmail').value, uAddr=this.$('#customerAddress').value;
+  applyTheme() {
+    const theme = localStorage.getItem('theme');
+    const themeIcon = this.$('#themeToggle i');
+    
+    if (theme === 'dark') {
+      document.body.setAttribute('data-theme', 'dark');
+      if (themeIcon) themeIcon.className = 'fas fa-sun';
+    }
+  }
 
-    const rows=this.services.map((s,i)=>`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.quantity}</td><td>${this.nf(s.price)}</td><td>${s.discount>0?s.discount+'%':'-'}</td><td>${this.nf(s.total)}</td></tr>`).join('');
+  // ========== INPUT FORMATTING ==========
+  formatCardNumber(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    value = value.replace(/(\d{4})(?=\d)/g, '$1-');
+    e.target.value = value.slice(0, 19);
+  }
 
-    const bank=(card||acc||iban)?`<div class="company-info"><div class="info-title">اطلاعات بانکی</div><div class="banking-info">${card?`<div class='bank-item'><span class='bank-label'>شماره کارت:</span><span>${card}</span></div>`:''}${acc?`<div class='bank-item'><span class='bank-label'>شماره حساب:</span><span>${acc}</span></div>`:''}${iban?`<div class='bank-item'><span class='bank-label'>شماره شبا:</span><span>${iban}</span></div>`:''}</div>`:'';
+  formatIban(e) {
+    let value = e.target.value.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+    if (!value.startsWith('IR')) {
+      value = 'IR' + value;
+    }
+    if (value.length > 2) {
+      value = value.slice(0, 2) + value.slice(2).replace(/(\d{4})(?=\d)/g, '$1-');
+    }
+    e.target.value = value.slice(0, 26);
+  }
 
-    const html=`<div class="invoice-header grid-2">
-      <div class="right-col">
-        <div class="invoice-title">فاکتور</div>
-        <div class="invoice-number">شماره: ${ivn}</div>
-        <div class="invoice-date">تاریخ: ${today}</div>
-        <div class="company-info"><div class="info-title">اطلاعات فروشنده</div><div class="info-content"><strong>${cName}</strong><br>${cPhone?`تلفن: ${cPhone}<br>`:''}${cEmail?`ایمیل: ${cEmail}<br>`:''}${cAddr?`آدرس: ${cAddr}`:''}</div></div>
+  // ========== SERVICE MANAGEMENT ==========
+  handleServiceSelect() {
+    const serviceSelect = this.$('#serviceSelect');
+    const customService = this.$('#customService');
+    
+    if (serviceSelect?.value && customService) {
+      customService.value = serviceSelect.value;
+      serviceSelect.value = '';
+      customService.focus();
+    }
+  }
+
+  addService() {
+    try {
+      const serviceName = (this.$('#customService')?.value?.trim() || this.$('#serviceSelect')?.value);
+      const quantity = parseInt(this.$('#serviceQuantity')?.value || '1', 10);
+      const price = parseFloat(this.$('#servicePrice')?.value || '0');
+      const discount = parseFloat(this.$('#serviceDiscount')?.value || '0');
+      
+      // Validation
+      if (!serviceName) {
+        this.showToast('نام خدمت را وارد کنید', 'error');
+        return;
+      }
+      
+      if (price <= 0) {
+        this.showToast('قیمت باید بیشتر از صفر باشد', 'error');
+        return;
+      }
+      
+      if (quantity <= 0) {
+        this.showToast('تعداد باید بیشتر از صفر باشد', 'error');
+        return;
+      }
+      
+      if (discount < 0 || discount > 100) {
+        this.showToast('تخفیف باید بین ۰ تا ۱۰۰ درصد باشد', 'error');
+        return;
+      }
+      
+      const baseAmount = quantity * price;
+      const discountAmount = baseAmount * discount / 100;
+      const total = baseAmount - discountAmount;
+      
+      this.services.push({
+        id: Date.now() + Math.random(),
+        name: serviceName,
+        quantity,
+        price,
+        discount,
+        baseAmount,
+        discountAmount,
+        total
+      });
+      
+      // Clear form
+      ['#customService', '#serviceSelect', '#servicePrice'].forEach(id => {
+        const el = this.$(id);
+        if (el) el.value = '';
+      });
+      
+      const quantityEl = this.$('#serviceQuantity');
+      const discountEl = this.$('#serviceDiscount');
+      if (quantityEl) quantityEl.value = '1';
+      if (discountEl) discountEl.value = '0';
+      
+      this.render();
+      this.showToast('خدمت اضافه شد', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در افزودن خدمت', error);
+    }
+  }
+
+  removeService(id) {
+    try {
+      this.services = this.services.filter(s => s.id !== id);
+      this.render();
+      this.showToast('خدمت حذف شد', 'success');
+    } catch (error) {
+      this.handleError('خطا در حذف خدمت', error);
+    }
+  }
+
+  // ========== CALCULATIONS ==========
+  formatNumber(num) {
+    try {
+      return new Intl.NumberFormat('fa-IR').format(Math.round(num));
+    } catch (error) {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+  }
+
+  getSubtotal() {
+    return this.services.reduce((total, service) => total + service.total, 0);
+  }
+
+  getTotalDiscount() {
+    const percentage = parseFloat(this.$('#totalDiscount')?.value || '0');
+    return this.getSubtotal() * percentage / 100;
+  }
+
+  getTax() {
+    const taxableAmount = this.getSubtotal() - this.getTotalDiscount();
+    return taxableAmount * 0.10; // 10% tax
+  }
+
+  getGrandTotal() {
+    return this.getSubtotal() - this.getTotalDiscount() + this.getTax();
+  }
+
+  // ========== INVOICE RENDERING ==========
+  render() {
+    try {
+      const invoiceNumber = this.getInvoiceNumber();
+      const today = this.getPersianDate();
+      
+      // Company info
+      const companyName = this.$('#companyName')?.value || 'نام شرکت';
+      const companyPhone = this.$('#companyPhone')?.value;
+      const companyEmail = this.$('#companyEmail')?.value;
+      const companyAddress = this.$('#companyAddress')?.value;
+      
+      // Banking info
+      const cardNumber = this.$('#cardNumber')?.value;
+      const accountNumber = this.$('#accountNumber')?.value;
+      const ibanNumber = this.$('#ibanNumber')?.value;
+      
+      // Customer info
+      const customerName = this.$('#customerName')?.value || 'نام مشتری';
+      const customerPhone = this.$('#customerPhone')?.value;
+      const customerEmail = this.$('#customerEmail')?.value;
+      const customerAddress = this.$('#customerAddress')?.value;
+      
+      // Generate services table
+      const servicesRows = this.services.map((service, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${service.name}</td>
+          <td>${service.quantity}</td>
+          <td>${this.formatNumber(service.price)}</td>
+          <td>${service.discount > 0 ? service.discount + '%' : '-'}</td>
+          <td>${this.formatNumber(service.total)}</td>
+        </tr>
+      `).join('');
+      
+      // Generate banking info section
+      const bankingInfo = (cardNumber || accountNumber || ibanNumber) ? `
+        <div class="company-info">
+          <div class="info-title">اطلاعات بانکی</div>
+          <div class="banking-info">
+            ${cardNumber ? `<div class='bank-item'><span class='bank-label'>شماره کارت:</span><span>${cardNumber}</span></div>` : ''}
+            ${accountNumber ? `<div class='bank-item'><span class='bank-label'>شماره حساب:</span><span>${accountNumber}</span></div>` : ''}
+            ${ibanNumber ? `<div class='bank-item'><span class='bank-label'>شماره شبا:</span><span>${ibanNumber}</span></div>` : ''}
+          </div>
+        </div>
+      ` : '';
+      
+      // Generate invoice HTML
+      const invoiceHTML = `
+        <div class="invoice-header">
+          <div class="right-col">
+            <div class="invoice-title">فاکتور</div>
+            <div class="invoice-number">شماره: ${invoiceNumber}</div>
+            <div class="invoice-date">تاریخ: ${today}</div>
+            <div class="company-info">
+              <div class="info-title">اطلاعات فروشنده</div>
+              <div class="info-content">
+                <strong>${companyName}</strong><br>
+                ${companyPhone ? `تلفن: ${companyPhone}<br>` : ''}
+                ${companyEmail ? `ایمیل: ${companyEmail}<br>` : ''}
+                ${companyAddress ? `آدرس: ${companyAddress}` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="left-col">
+            ${bankingInfo}
+          </div>
+        </div>
+        
+        <div class="customer-info">
+          <div class="info-title">اطلاعات خریدار</div>
+          <div class="info-content">
+            <strong>${customerName}</strong><br>
+            ${customerPhone ? `تلفن: ${customerPhone}<br>` : ''}
+            ${customerEmail ? `ایمیل: ${customerEmail}<br>` : ''}
+            ${customerAddress ? `آدرس: ${customerAddress}` : ''}
+          </div>
+        </div>
+        
+        ${this.services.length ? `
+          <table class='services-table'>
+            <thead>
+              <tr>
+                <th>ردیف</th>
+                <th>شرح خدمات</th>
+                <th>تعداد</th>
+                <th>قیمت واحد (تومان)</th>
+                <th>تخفیف</th>
+                <th>مبلغ (تومان)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${servicesRows}
+            </tbody>
+          </table>
+          
+          <div class='invoice-calculations'>
+            <div class='calculations-box'>
+              <div class='calc-row'>
+                <span>جمع کل:</span>
+                <span>${this.formatNumber(this.getSubtotal())} تومان</span>
+              </div>
+              ${this.getTotalDiscount() > 0 ? `
+                <div class='calc-row discount-calc'>
+                  <span>تخفیف کلی:</span>
+                  <span>-${this.formatNumber(this.getTotalDiscount())} تومان</span>
+                </div>
+              ` : ''}
+              <div class='calc-row tax-calc'>
+                <span>مالیات (10%):</span>
+                <span>+${this.formatNumber(this.getTax())} تومان</span>
+              </div>
+              <div class='calc-row'>
+                <span>مبلغ کل قابل پرداخت:</span>
+                <span>${this.formatNumber(this.getGrandTotal())} تومان</span>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="empty-state">
+            <i class="fas fa-shopping-cart"></i>
+            <h3>هیچ خدمتی اضافه نشده است</h3>
+            <p>برای شروع، خدمت مورد نظر خود را از لیست انتخاب کنید یا به صورت سفارشی وارد کنید</p>
+          </div>
+        `}
+      `;
+      
+      const previewElement = this.$('#invoicePreview');
+      if (previewElement) {
+        previewElement.innerHTML = invoiceHTML;
+      }
+      
+      // Render services list in form
+      this.renderServicesList();
+      
+    } catch (error) {
+      this.handleError('خطا در رندر فاکتور', error);
+    }
+  }
+
+  renderServicesList() {
+    const servicesListEl = this.$('#servicesList');
+    if (!servicesListEl) return;
+    
+    if (this.services.length === 0) {
+      servicesListEl.innerHTML = '';
+      return;
+    }
+    
+    const servicesHTML = this.services.map(service => `
+      <div class="service-item">
+        <div class="service-details">
+          <div class="service-name">${service.name}</div>
+          <div class="service-info">
+            ${service.quantity} × ${this.formatNumber(service.price)} تومان
+            ${service.discount > 0 ? ` - ${service.discount}% تخفیف` : ''}
+          </div>
+        </div>
+        <div class="service-total">${this.formatNumber(service.total)} تومان</div>
+        <button class="remove-btn" onclick="invoiceGenerator.removeService(${service.id})">
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
-      <div class="left-col">${bank}</div>
-    </div>
-    <div class="customer-info"><div class="info-title">اطلاعات خریدار</div><div class="info-content"><strong>${uName}</strong><br>${uPhone?`تلفن: ${uPhone}<br>`:''}${uEmail?`ایمیل: ${uEmail}<br>`:''}${uAddr?`آدرس: ${uAddr}`:''}</div></div>
-    ${this.services.length?`<table class='services-table'><thead><tr><th>ردیف</th><th>شرح خدمات</th><th>تعداد</th><th>قیمت واحد (تومان)</th><th>تخفیف</th><th>مبلغ (تومان)</th></tr></thead><tbody>${rows}</tbody></table><div class='invoice-calculations'><div class='calculations-box'><div class='calc-row'><span>جمع کل:</span><span>${this.nf(this.subtotal())} تومان</span></div>${this.totalDiscount()>0?`<div class='calc-row discount-calc'><span>تخفیف کلی:</span><span>-${this.nf(this.totalDiscount())} تومان</span></div>`:''}<div class='calc-row tax-calc'><span>مالیات (10%):</span><span>+${this.nf(this.tax())} تومان</span></div><div class='calc-row'><span>مبلغ کل قابل پرداخت:</span><span>${this.nf(this.grand())} تومان</span></div></div></div>`:"<p style='text-align:center;color:#666;font-style:italic;'>هیچ خدمتی اضافه نشده است</p>"}`;
-
-    this.$('#invoicePreview').innerHTML=html;
+    `).join('');
+    
+    servicesListEl.innerHTML = servicesHTML;
   }
 
-  // ---------- PDF & SHARE ----------
-  async makeCanvas(){ return await html2canvas(document.getElementById('invoicePreview'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff'}); }
-  async downloadPDF(){ try{ const {jsPDF}=window.jspdf; const canvas=await this.makeCanvas(); const img=canvas.toDataURL('image/png'); const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); const w=210, ph=295, h=(canvas.height*w)/canvas.width; let left=h; pdf.addImage(img,'PNG',0,0,w,h); left-=ph; while(left>=0){pdf.addPage(); pdf.addImage(img,'PNG',0,left-h,w,h); left-=ph;} const n=this.getInvoiceNumber(); pdf.save(`فاکتور-${n}.pdf`); this.finalizeAfterPDF(); }catch(e){ console.error(e); alert('خطا در تولید PDF'); } }
-
-  async share(channel){
-    const n=this.getInvoiceNumber(); const total=this.nf(this.grand()); const company=this.$('#companyName').value||'شرکت'; const summary=`فاکتور ${n} از ${company}\nمبلغ قابل پرداخت: ${total} تومان`;
-    if(channel==='email'){ const email=this.$('#customerEmail').value||''; const mailto=`mailto:${email}?subject=${encodeURIComponent(`فاکتور ${n} از ${company}`)}&body=${encodeURIComponent(summary+"\n\nلطفاً فایل PDF را از دکمه دانلود در سامانه دریافت کنید." )}`; window.open(mailto); }
-    if(channel==='whatsapp'){ window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(summary)}`,'_blank'); }
-    if(channel==='telegram'){ window.open(`https://t.me/share/url?url=${encodeURIComponent(' ')}&text=${encodeURIComponent(summary)}`,'_blank'); }
+  // ========== PDF GENERATION ==========
+  async downloadPDF() {
+    if (this.services.length === 0) {
+      this.showToast('لطفاً حداقل یک خدمت اضافه کنید', 'error');
+      return;
+    }
+    
+    try {
+      this.showLoading(true);
+      
+      const canvas = await this.generateCanvas();
+      const pdf = await this.generatePDFFromCanvas(canvas);
+      
+      const invoiceNumber = this.getInvoiceNumber();
+      pdf.save(`فاکتور-${invoiceNumber}.pdf`);
+      
+      // Save invoice to history
+      await this.saveInvoiceToHistory();
+      
+      // Finalize invoice number
+      this.finalizeInvoiceNumber();
+      
+      this.showToast('فایل PDF با موفقیت تولید شد', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در تولید PDF', error);
+    } finally {
+      this.showLoading(false);
+    }
   }
 
-  // ---------- STORAGE ----------
-  getInvoiceCounter(){ const s=localStorage.getItem('invoiceCounter'); return s?parseInt(s,10):1; }
+  async generateCanvas() {
+    const previewElement = this.$('#invoicePreview');
+    if (!previewElement) {
+      throw new Error('المان پیش‌نمایش فاکتور یافت نشد');
+    }
+    
+    return await html2canvas(previewElement, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    });
+  }
+
+  async generatePDFFromCanvas(canvas) {
+    const { jsPDF } = window.jspdf;
+    const imgData = canvas.toDataURL('image/png');
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+    
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    let heightLeft = imgHeight;
+    let position = 0;
+    
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+    
+    return pdf;
+  }
+
+  // ========== INVOICE HISTORY ==========
+  async saveInvoiceToHistory() {
+    try {
+      const invoiceData = {
+        id: Date.now(),
+        number: this.getInvoiceNumber(),
+        date: new Date().toISOString(),
+        persianDate: this.getPersianDate(),
+        companyName: this.$('#companyName')?.value || 'شرکت',
+        customerName: this.$('#customerName')?.value || 'مشتری',
+        services: [...this.services],
+        subtotal: this.getSubtotal(),
+        totalDiscount: this.getTotalDiscount(),
+        tax: this.getTax(),
+        grandTotal: this.getGrandTotal(),
+        servicesCount: this.services.length,
+        servicesText: this.services.map(s => s.name).join('، ')
+      };
+      
+      this.savedInvoices.unshift(invoiceData);
+      
+      // Keep only last 1000 invoices to prevent storage overflow
+      if (this.savedInvoices.length > 1000) {
+        this.savedInvoices = this.savedInvoices.slice(0, 1000);
+      }
+      
+      localStorage.setItem('savedInvoices', JSON.stringify(this.savedInvoices));
+      
+    } catch (error) {
+      this.handleError('خطا در ذخیره فاکتور', error);
+    }
+  }
+
+  getSavedInvoices() {
+    try {
+      const data = localStorage.getItem('savedInvoices');
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      this.handleError('خطا در بارگذاری تاریخچه فاکتورها', error);
+      return [];
+    }
+  }
+
+  // ========== NAVIGATION ==========
+  showHistory() {
+    const mainContent = this.$('#mainContent');
+    const historySection = this.$('#historySection');
+    
+    if (mainContent && historySection) {
+      mainContent.style.display = 'none';
+      historySection.style.display = 'block';
+      
+      this.renderHistoryStats();
+      this.filterInvoices();
+    }
+  }
+
+  showMain() {
+    const mainContent = this.$('#mainContent');
+    const historySection = this.$('#historySection');
+    
+    if (mainContent && historySection) {
+      mainContent.style.display = 'block';
+      historySection.style.display = 'none';
+      this.render();
+    }
+  }
+
+  // ========== HISTORY MANAGEMENT ==========
+  renderHistoryStats() {
+    const totalInvoices = this.savedInvoices.length;
+    const totalRevenue = this.savedInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
+    
+    const thisMonth = new Date();
+    const thisMonthInvoices = this.savedInvoices.filter(inv => {
+      const invDate = new Date(inv.date);
+      return invDate.getMonth() === thisMonth.getMonth() && 
+             invDate.getFullYear() === thisMonth.getFullYear();
+    }).length;
+    
+    const totalEl = this.$('#totalInvoices');
+    const revenueEl = this.$('#totalRevenue');
+    const monthEl = this.$('#thisMonthInvoices');
+    
+    if (totalEl) totalEl.textContent = this.formatNumber(totalInvoices);
+    if (revenueEl) revenueEl.textContent = this.formatNumber(totalRevenue);
+    if (monthEl) monthEl.textContent = this.formatNumber(thisMonthInvoices);
+  }
+
+  filterInvoices() {
+    const searchTerm = this.$('#searchInvoices')?.value?.toLowerCase() || '';
+    const period = this.$('#filterPeriod')?.value || 'all';
+    const sortBy = this.$('#sortBy')?.value || 'date-desc';
+    
+    let filtered = [...this.savedInvoices];
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(inv => 
+        inv.number.toLowerCase().includes(searchTerm) ||
+        inv.customerName.toLowerCase().includes(searchTerm) ||
+        inv.companyName.toLowerCase().includes(searchTerm) ||
+        inv.servicesText.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Apply period filter
+    if (period !== 'all') {
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (period) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(inv => new Date(inv.date) >= startDate);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-asc':
+          return new Date(a.date) - new Date(b.date);
+        case 'date-desc':
+          return new Date(b.date) - new Date(a.date);
+        case 'amount-asc':
+          return a.grandTotal - b.grandTotal;
+        case 'amount-desc':
+          return b.grandTotal - a.grandTotal;
+        default:
+          return new Date(b.date) - new Date(a.date);
+      }
+    });
+    
+    this.filteredInvoices = filtered;
+    this.currentPage = 1;
+    this.renderHistoryList();
+  }
+
+  renderHistoryList() {
+    const historyList = this.$('#historyList');
+    if (!historyList) return;
+    
+    if (this.filteredInvoices.length === 0) {
+      historyList.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-search"></i>
+          <h3>فاکتوری یافت نشد</h3>
+          <p>برای مشاهده فاکتورها، ابتدا فاکتور جدیدی ایجاد کنید</p>
+        </div>
+      `;
+      this.updatePagination();
+      return;
+    }
+    
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    const pageInvoices = this.filteredInvoices.slice(startIndex, endIndex);
+    
+    const historyHTML = pageInvoices.map(invoice => `
+      <div class="history-item">
+        <div class="history-item-info">
+          <div class="history-item-number">${invoice.number}</div>
+          <div class="history-item-customer">${invoice.customerName}</div>
+          <div class="history-item-date">${invoice.persianDate}</div>
+          <div class="history-item-services">${invoice.servicesCount} خدمت: ${invoice.servicesText}</div>
+        </div>
+        <div class="history-item-amount">${this.formatNumber(invoice.grandTotal)} تومان</div>
+        <div class="history-item-actions">
+          <button class="history-btn" onclick="invoiceGenerator.viewInvoice(${invoice.id})">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="history-btn success" onclick="invoiceGenerator.downloadInvoiceAgain(${invoice.id})">
+            <i class="fas fa-download"></i>
+          </button>
+          <button class="history-btn danger" onclick="invoiceGenerator.deleteInvoice(${invoice.id})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+    
+    historyList.innerHTML = historyHTML;
+    this.updatePagination();
+  }
+
+  updatePagination() {
+    const totalPages = Math.ceil(this.filteredInvoices.length / this.itemsPerPage);
+    
+    const prevBtn = this.$('#prevPageBtn');
+    const nextBtn = this.$('#nextPageBtn');
+    const pageInfo = this.$('#pageInfo');
+    
+    if (prevBtn) {
+      prevBtn.disabled = this.currentPage <= 1;
+    }
+    
+    if (nextBtn) {
+      nextBtn.disabled = this.currentPage >= totalPages;
+    }
+    
+    if (pageInfo) {
+      pageInfo.textContent = totalPages > 0 ? 
+        `صفحه ${this.currentPage} از ${totalPages}` : 'صفحه 1 از 1';
+    }
+  }
+
+  changePage(direction) {
+    const totalPages = Math.ceil(this.filteredInvoices.length / this.itemsPerPage);
+    const newPage = this.currentPage + direction;
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+      this.currentPage = newPage;
+      this.renderHistoryList();
+    }
+  }
+
+  viewInvoice(invoiceId) {
+    const invoice = this.savedInvoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+      this.showToast('فاکتور یافت نشد', 'error');
+      return;
+    }
+    
+    // Load invoice data to form
+    this.services = [...invoice.services];
+    
+    // Switch to main view
+    this.showMain();
+    this.showToast('فاکتور بارگذاری شد', 'success');
+  }
+
+  async downloadInvoiceAgain(invoiceId) {
+    const invoice = this.savedInvoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+      this.showToast('فاکتور یافت نشد', 'error');
+      return;
+    }
+    
+    // Temporarily load the invoice to generate PDF
+    const originalServices = [...this.services];
+    this.services = [...invoice.services];
+    this.render();
+    
+    try {
+      const canvas = await this.generateCanvas();
+      const pdf = await this.generatePDFFromCanvas(canvas);
+      pdf.save(`فاکتور-${invoice.number}.pdf`);
+      this.showToast('فایل PDF مجدداً دانلود شد', 'success');
+    } catch (error) {
+      this.handleError('خطا در دانلود مجدد PDF', error);
+    } finally {
+      // Restore original services
+      this.services = originalServices;
+      this.render();
+    }
+  }
+
+  deleteInvoice(invoiceId) {
+    if (!confirm('آیا از حذف این فاکتور اطمینان دارید؟')) {
+      return;
+    }
+    
+    try {
+      this.savedInvoices = this.savedInvoices.filter(inv => inv.id !== invoiceId);
+      localStorage.setItem('savedInvoices', JSON.stringify(this.savedInvoices));
+      
+      this.renderHistoryStats();
+      this.filterInvoices();
+      this.showToast('فاکتور حذف شد', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در حذف فاکتور', error);
+    }
+  }
+
+  clearHistory() {
+    if (!confirm('آیا از پاک کردن تمام فاکتورها اطمینان دارید؟ این عمل قابل بازگشت نیست.')) {
+      return;
+    }
+    
+    try {
+      this.savedInvoices = [];
+      localStorage.removeItem('savedInvoices');
+      
+      this.renderHistoryStats();
+      this.filterInvoices();
+      this.showToast('تمام فاکتورها پاک شدند', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در پاک کردن تاریخچه', error);
+    }
+  }
+
+  exportHistory() {
+    if (this.savedInvoices.length === 0) {
+      this.showToast('فاکتوری برای صادرات وجود ندارد', 'error');
+      return;
+    }
+    
+    try {
+      const csvContent = this.generateCSV();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `فاکتورها-${this.getPersianDate()}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      this.showToast('فایل Excel با موفقیت صادر شد', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در صادرات فایل', error);
+    }
+  }
+
+  generateCSV() {
+    const headers = ['شماره فاکتور', 'تاریخ', 'نام شرکت', 'نام مشتری', 'تعداد خدمات', 'مبلغ کل (تومان)'];
+    const rows = this.savedInvoices.map(inv => [
+      inv.number,
+      inv.persianDate,
+      inv.companyName,
+      inv.customerName,
+      inv.servicesCount,
+      inv.grandTotal
+    ]);
+    
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+    
+    // Add BOM for proper UTF-8 encoding in Excel
+    return '\uFEFF' + csvContent;
+  }
+
+  // ========== SHARING ==========
+  async share(platform) {
+    if (this.services.length === 0) {
+      this.showToast('لطفاً حداقل یک خدمت اضافه کنید', 'error');
+      return;
+    }
+    
+    try {
+      const invoiceNumber = this.getInvoiceNumber();
+      const total = this.formatNumber(this.getGrandTotal());
+      const companyName = this.$('#companyName')?.value || 'شرکت';
+      
+      const message = `فاکتور ${invoiceNumber} از ${companyName}\nمبلغ قابل پرداخت: ${total} تومان\n\nجهت دریافت فایل PDF لطفاً با ما تماس بگیرید.`;
+      
+      switch (platform) {
+        case 'email': {
+          const email = this.$('#customerEmail')?.value || '';
+          const subject = `فاکتور ${invoiceNumber} از ${companyName}`;
+          const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+          window.open(mailtoUrl);
+          break;
+        }
+        
+        case 'whatsapp': {
+          const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+          window.open(whatsappUrl, '_blank');
+          break;
+        }
+        
+        case 'telegram': {
+          const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(' ')}&text=${encodeURIComponent(message)}`;
+          window.open(telegramUrl, '_blank');
+          break;
+        }
+      }
+      
+      this.showToast('لینک اشتراک‌گذاری باز شد', 'success');
+      
+    } catch (error) {
+      this.handleError('خطا در اشتراک‌گذاری', error);
+    }
+  }
+
+  // ========== UI HELPERS ==========
+  showLoading(show = true) {
+    const spinner = this.$('#loadingSpinner');
+    if (spinner) {
+      spinner.style.display = show ? 'flex' : 'none';
+    }
+  }
+
+  showToast(message, type = 'info') {
+    const toastId = type === 'error' ? 'errorToast' : 'successToast';
+    const messageId = type === 'error' ? 'errorMessage' : 'successMessage';
+    
+    const toast = this.$(`#${toastId}`);
+    const messageEl = this.$(`#${messageId}`);
+    
+    if (toast && messageEl) {
+      messageEl.textContent = message;
+      toast.style.display = 'flex';
+      
+      setTimeout(() => {
+        this.hideToast(toastId);
+      }, 4000);
+    }
+  }
+
+  hideToast(toastId) {
+    const toast = this.$(`#${toastId}`);
+    if (toast) {
+      toast.style.display = 'none';
+    }
+  }
+
+  // ========== ERROR HANDLING ==========
+  handleError(message, error = null) {
+    console.error(message, error);
+    this.showToast(message, 'error');
+    this.showLoading(false);
+  }
+
+  handleGlobalError(event) {
+    console.error('Global error:', event);
+    this.showToast('خطای غیرمنتظره‌ای رخ داده است', 'error');
+  }
+
+  // ========== UTILITY FUNCTIONS ==========
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // ========== CLEANUP ==========
+  destroy() {
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+    }
+  }
 }
 
-let invoiceGenerator; document.addEventListener('DOMContentLoaded',()=>{ invoiceGenerator=new InvoiceGenerator(); });
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('/sw.js').catch(()=>{}); }); }
+// Global toast function
+function hideToast(toastId) {
+  if (window.invoiceGenerator) {
+    window.invoiceGenerator.hideToast(toastId);
+  }
+}
+
+// Initialize app when DOM is ready
+let invoiceGenerator;
+
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    invoiceGenerator = new InvoiceGenerator();
+    window.invoiceGenerator = invoiceGenerator;
+    
+    console.log('Invoice Generator v2.0.0 initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Invoice Generator:', error);
+    alert('خطا در بارگذاری برنامه. لطفاً صفحه را مجدداً بارگذاری کنید.');
+  }
+});
+
+// Service Worker registration for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registered successfully');
+    } catch (error) {
+      console.log('Service Worker registration failed:', error);
+    }
+  });
+}
+
+// Handle page unload
+window.addEventListener('beforeunload', () => {
+  if (invoiceGenerator) {
+    invoiceGenerator.persistData();
+    invoiceGenerator.destroy();
+  }
+});
