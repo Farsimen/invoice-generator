@@ -1,0 +1,62 @@
+<section class="invoice-history-section" id="historySection" style="display: none;">
+  <div class="history-header">
+    <h2><i class="fas fa-history"></i> فاکتورهای صادر شده</h2>
+    <div class="history-actions">
+      <button id="backToMainBtn" class="action-btn back-btn" type="button" aria-label="بازگشت">
+        <i class="fas fa-arrow-right"></i> بازگشت
+      </button>
+      <button id="clearHistoryBtn" class="action-btn danger-btn" type="button" aria-label="پاک کردن همه">
+        <i class="fas fa-trash"></i> پاک کردن همه
+      </button>
+      <button id="exportHistoryBtn" class="action-btn success-btn" type="button" aria-label="خروجی Excel">
+        <i class="fas fa-download"></i> خروجی Excel
+      </button>
+    </div>
+  </div>
+
+  <div class="history-stats" role="region" aria-label="آمار فاکتورها">
+    <div class="stat-card">
+      <div class="stat-number" id="totalInvoices">0</div>
+      <div class="stat-label">کل فاکتورها</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="totalRevenue">0</div>
+      <div class="stat-label">کل درآمد (تومان)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="thisMonthInvoices">0</div>
+      <div class="stat-label">این ماه</div>
+    </div>
+  </div>
+
+  <div class="history-search">
+    <div class="search-controls">
+      <input type="text" id="searchInvoices" placeholder="جستجو در فاکتورها..." aria-label="جستجو">
+      <select id="filterPeriod" aria-label="فیلتر زمانی">
+        <option value="all">همه دوره‌ها</option>
+        <option value="today">امروز</option>
+        <option value="week">هفته گذشته</option>
+        <option value="month">ماه گذشته</option>
+        <option value="year">سال گذشته</option>
+      </select>
+      <select id="sortBy" aria-label="مرتب‌سازی">
+        <option value="date-desc">جدیدترین</option>
+        <option value="date-asc">قدیمی‌ترین</option>
+        <option value="amount-desc">بیشترین مبلغ</option>
+        <option value="amount-asc">کمترین مبلغ</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="history-list" id="historyList"></div>
+
+  <div class="history-pagination" role="navigation" aria-label="صفحه‌بندی">
+    <button id="prevPageBtn" class="page-btn" disabled type="button" aria-label="قبلی">
+      <i class="fas fa-chevron-right"></i> قبلی
+    </button>
+    <span id="pageInfo">صفحه 1 از 1</span>
+    <button id="nextPageBtn" class="page-btn" disabled type="button" aria-label="بعدی">
+      بعدی <i class="fas fa-chevron-left"></i>
+    </button>
+  </div>
+</section>
