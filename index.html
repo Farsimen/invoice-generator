@@ -3,7 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="سامانه مدرن و حرفه‌ای برای صدور فاکتور با پشتیبانی از PDF و قابلیت اشتراک‌گذاری">
+    <meta name="keywords" content="فاکتور, صدور فاکتور, PDF, ایران, کسب و کار, حسابداری">
+    <meta name="author" content="Farsimen">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="فاکتور ساز">
+    <meta name="application-name" content="فاکتور ساز">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="سامانه صدور فاکتور">
+    <meta property="og:description" content="سامانه مدرن و حرفه‌ای برای صدور فاکتور با پشتیبانی از PDF">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://invoice-generator.pages.dev">
+    <meta property="og:site_name" content="سامانه صدور فاکتور">
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="سامانه صدور فاکتور">
+    <meta name="twitter:description" content="سامانه مدرن و حرفه‌ای برای صدور فاکتور با پشتیبانی از PDF">
+    
     <title>سامانه صدور فاکتور - Invoice Generator</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTIiIGZpbGw9IiMzYjgyZjYiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+CjxwYXRoIGQ9Ik0xNCAySDZBMiAyIDAgMCAwIDQgNFYyMEEyIDIgMCAwIDAgNiAyMkgxOEEyIDIgMCAwIDAgMjAgMjBWOEwxNCAyWiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBvbHlsaW5lIHBvaW50cz0iMTQsMiAxNCw4IDIwLDgiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxsaW5lIHgxPSIxNiIgeTE9IjEzIiB4Mj0iOCIgeTI9IjEzIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8bGluZSB4MT0iMTYiIHkxPSIxNyIgeDI9IjgiIHkyPSIxNyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPHN2ZyB4PSI5IiB5PSIxMSIgd2lkdGg9IjEwIiBoZWlnaHQ9IjYiPgo8cG9seWxpbmUgcG9pbnRzPSIxLDEgNCw0IDksNCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4KPC9zdmc+Cjwvc3ZnPg==">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iNDAiIGZpbGw9IiMzYjgyZjYiLz4KPHN2ZyB4PSIzMiIgeT0iMzIiIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiPgo8cGF0aCBkPSJNMTQgMkg2QTIgMiAwIDAgMCA0IDRWMjBBMiAyIDAgMCAwIDYgMjJIMThBMiAyIDAgMCAwIDIwIDIwVjhMMTQgMloiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjxwb2x5bGluZSBwb2ludHM9IjE0LDIgMTQsOCAyMCw4IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8bGluZSB4MT0iMTYiIHkxPSIxMyIgeDI9IjgiIHkyPSIxMyIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPGxpbmUgeDE9IjE2IiB5MT0iMTciIHgyPSI4IiB5Mj0iMTciIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjxzdmcgej0iOSIgeT0iMTEiIHdpZHRoPSIxMCIgaGVpZ2h0PSI2Ij4KPHBvbHlsaW5lIHBvaW50cz0iMSwxIDQsNCA5LDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cjwvc3ZnPgo8L3N2Zz4=">
+    
+    <!-- External CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
@@ -35,7 +72,7 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>نام شرکت</label>
-                        <input type="text" id="companyName" placeholder="نام شرکت خود را وارد کنید">
+                        <input type="text" id="companyName" placeholder="نام شرکت خود را وارد کنید" required>
                     </div>
                     <div class="form-group">
                         <label>شماره تماس</label>
@@ -47,7 +84,7 @@
                     </div>
                     <div class="form-group full-width">
                         <label>آدرس</label>
-                        <textarea id="companyAddress" placeholder="آدرس کامل شرکت"></textarea>
+                        <textarea id="companyAddress" placeholder="آدرس کامل شرکت" rows="3"></textarea>
                     </div>
                 </div>
                 
@@ -75,7 +112,7 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>نام مشتری</label>
-                        <input type="text" id="customerName" placeholder="نام مشتری">
+                        <input type="text" id="customerName" placeholder="نام مشتری" required>
                     </div>
                     <div class="form-group">
                         <label>شماره تماس</label>
@@ -87,7 +124,7 @@
                     </div>
                     <div class="form-group full-width">
                         <label>آدرس</label>
-                        <textarea id="customerAddress" placeholder="آدرس مشتری"></textarea>
+                        <textarea id="customerAddress" placeholder="آدرس مشتری" rows="3"></textarea>
                     </div>
                 </div>
             </section>
@@ -97,7 +134,7 @@
                 <h2><i class="fas fa-cogs"></i> خدمات</h2>
                 <div class="service-controls">
                     <div class="service-input-group">
-                        <select id="serviceSelect">
+                        <select id="serviceSelect" aria-label="انتخاب خدمت از فهرست">
                             <option value="">انتخاب خدمت</option>
                             <optgroup label="خدمات وب">
                                 <option value="طراحی سایت">طراحی سایت</option>
@@ -142,21 +179,23 @@
                                 <option value="CDN Setup">CDN Setup</option>
                             </optgroup>
                         </select>
-                        <input type="text" id="customService" placeholder="یا خدمت سفارشی وارد کنید">
-                        <input type="number" id="serviceQuantity" placeholder="تعداد" min="1" value="1">
-                        <input type="number" id="servicePrice" placeholder="قیمت (تومان)" min="0">
-                        <input type="number" id="serviceDiscount" placeholder="تخفیف %" min="0" max="100" value="0">
-                        <button id="addService" class="add-btn"><i class="fas fa-plus"></i> افزودن</button>
+                        <input type="text" id="customService" placeholder="یا خدمت سفارشی وارد کنید" aria-label="خدمت سفارشی">
+                        <input type="number" id="serviceQuantity" placeholder="تعداد" min="1" value="1" aria-label="تعداد" required>
+                        <input type="number" id="servicePrice" placeholder="قیمت (تومان)" min="0" step="1000" aria-label="قیمت به تومان" required>
+                        <input type="number" id="serviceDiscount" placeholder="تخفیف %" min="0" max="100" value="0" aria-label="درصد تخفیف">
+                        <button id="addService" class="add-btn" type="button" aria-label="افزودن خدمت به فاکتور">
+                            <i class="fas fa-plus"></i> افزودن
+                        </button>
                     </div>
                 </div>
-                <div class="services-list" id="servicesList"></div>
+                <div class="services-list" id="servicesList" role="list" aria-label="فهرست خدمات اضافه شده"></div>
                 
                 <!-- Total Discount -->
                 <div class="total-discount-section">
                     <h3><i class="fas fa-percentage"></i> کادر تخفیفات</h3>
                     <div class="form-group">
                         <label>تخفیف کلی (درصد)</label>
-                        <input type="number" id="totalDiscount" placeholder="0" min="0" max="100" value="0">
+                        <input type="number" id="totalDiscount" placeholder="0" min="0" max="100" value="0" aria-label="درصد تخفیف کلی">
                     </div>
                 </div>
             </section>
@@ -165,20 +204,20 @@
             <section class="invoice-section">
                 <h2><i class="fas fa-file-alt"></i> پیش نمایش فاکتور</h2>
                 <div class="invoice-actions">
-                    <button id="generatePDF" class="action-btn pdf-btn">
+                    <button id="generatePDF" class="action-btn pdf-btn" type="button" aria-label="دانلود فاکتور به صورت PDF">
                         <i class="fas fa-file-pdf"></i> دانلود PDF
                     </button>
-                    <button id="shareEmail" class="action-btn email-btn">
+                    <button id="shareEmail" class="action-btn email-btn" type="button" aria-label="ارسال فاکتور از طریق ایمیل">
                         <i class="fas fa-envelope"></i> ارسال ایمیل
                     </button>
-                    <button id="shareWhatsApp" class="action-btn whatsapp-btn">
+                    <button id="shareWhatsApp" class="action-btn whatsapp-btn" type="button" aria-label="اشتراک فاکتور در واتساپ">
                         <i class="fab fa-whatsapp"></i> اشتراک واتساپ
                     </button>
-                    <button id="shareTelegram" class="action-btn telegram-btn">
+                    <button id="shareTelegram" class="action-btn telegram-btn" type="button" aria-label="اشتراک فاکتور در تلگرام">
                         <i class="fab fa-telegram"></i> اشتراک تلگرام
                     </button>
                 </div>
-                <div class="invoice-preview" id="invoicePreview">
+                <div class="invoice-preview" id="invoicePreview" role="document" aria-label="پیش نمایش فاکتور">
                     <!-- Invoice content will be generated here -->
                 </div>
             </section>
@@ -189,18 +228,18 @@
             <div class="history-header">
                 <h2><i class="fas fa-history"></i> فاکتورهای صادر شده</h2>
                 <div class="history-actions">
-                    <button id="backToMainBtn" class="action-btn back-btn">
+                    <button id="backToMainBtn" class="action-btn back-btn" type="button" aria-label="بازگشت به صفحه اصلی">
                         <i class="fas fa-arrow-right"></i> بازگشت
                     </button>
-                    <button id="clearHistoryBtn" class="action-btn danger-btn">
+                    <button id="clearHistoryBtn" class="action-btn danger-btn" type="button" aria-label="پاک کردن تمام فاکتورها">
                         <i class="fas fa-trash"></i> پاک کردن همه
                     </button>
-                    <button id="exportHistoryBtn" class="action-btn success-btn">
+                    <button id="exportHistoryBtn" class="action-btn success-btn" type="button" aria-label="صادرات فاکتورها به فایل Excel">
                         <i class="fas fa-download"></i> خروجی Excel
                     </button>
                 </div>
             </div>
-            <div class="history-stats">
+            <div class="history-stats" role="region" aria-label="آمار فاکتورها">
                 <div class="stat-card">
                     <div class="stat-number" id="totalInvoices">0</div>
                     <div class="stat-label">کل فاکتورها</div>
@@ -216,15 +255,15 @@
             </div>
             <div class="history-search">
                 <div class="search-controls">
-                    <input type="text" id="searchInvoices" placeholder="جستجو در فاکتورها...">
-                    <select id="filterPeriod">
+                    <input type="text" id="searchInvoices" placeholder="جستجو در فاکتورها..." aria-label="جستجو در فاکتورها">
+                    <select id="filterPeriod" aria-label="فیلتر بر اساس زمان">
                         <option value="all">همه دوره‌ها</option>
                         <option value="today">امروز</option>
                         <option value="week">هفته گذشته</option>
                         <option value="month">ماه گذشته</option>
                         <option value="year">سال گذشته</option>
                     </select>
-                    <select id="sortBy">
+                    <select id="sortBy" aria-label="مرتب‌سازی بر اساس">
                         <option value="date-desc">جدیدترین</option>
                         <option value="date-asc">قدیمی‌ترین</option>
                         <option value="amount-desc">بیشترین مبلغ</option>
@@ -232,15 +271,15 @@
                     </select>
                 </div>
             </div>
-            <div class="history-list" id="historyList">
+            <div class="history-list" id="historyList" role="list" aria-label="فهرست فاکتورهای صادر شده">
                 <!-- Invoice history items will be rendered here -->
             </div>
-            <div class="history-pagination">
-                <button id="prevPageBtn" class="page-btn" disabled>
+            <div class="history-pagination" role="navigation" aria-label="صفحه‌بندی فاکتورها">
+                <button id="prevPageBtn" class="page-btn" disabled type="button" aria-label="صفحه قبل">
                     <i class="fas fa-chevron-right"></i> قبلی
                 </button>
-                <span id="pageInfo">صفحه 1 از 1</span>
-                <button id="nextPageBtn" class="page-btn" disabled>
+                <span id="pageInfo" aria-live="polite">صفحه 1 از 1</span>
+                <button id="nextPageBtn" class="page-btn" disabled type="button" aria-label="صفحه بعد">
                     بعدی <i class="fas fa-chevron-left"></i>
                 </button>
             </div>
@@ -248,31 +287,59 @@
     </div>
 
     <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+    <div class="loading-spinner" id="loadingSpinner" style="display: none;" role="status" aria-label="در حال پردازش">
         <div class="spinner"></div>
         <p>در حال پردازش...</p>
     </div>
 
     <!-- Error Toast -->
-    <div class="toast error-toast" id="errorToast" style="display: none;">
+    <div class="toast error-toast" id="errorToast" style="display: none;" role="alert" aria-live="assertive">
         <i class="fas fa-exclamation-circle"></i>
         <span id="errorMessage">خطایی رخ داده است</span>
-        <button class="toast-close" onclick="hideToast('errorToast')">
+        <button class="toast-close" onclick="hideToast('errorToast')" type="button" aria-label="بستن پیام خطا">
             <i class="fas fa-times"></i>
         </button>
     </div>
 
     <!-- Success Toast -->
-    <div class="toast success-toast" id="successToast" style="display: none;">
+    <div class="toast success-toast" id="successToast" style="display: none;" role="status" aria-live="polite">
         <i class="fas fa-check-circle"></i>
         <span id="successMessage">عملیات با موفقیت انجام شد</span>
-        <button class="toast-close" onclick="hideToast('successToast')">
+        <button class="toast-close" onclick="hideToast('successToast')" type="button" aria-label="بستن پیام موفقیت">
             <i class="fas fa-times"></i>
         </button>
     </div>
 
+    <!-- Install PWA Prompt -->
+    <div class="pwa-install-prompt" id="pwaInstallPrompt" style="display: none;">
+        <div class="pwa-prompt-content">
+            <i class="fas fa-download"></i>
+            <h3>نصب سامانه فاکتور</h3>
+            <p>برای دسترسی آسان‌تر، این برنامه را روی دستگاه خود نصب کنید</p>
+            <div class="pwa-prompt-actions">
+                <button id="installPWA" class="action-btn success-btn" type="button">
+                    <i class="fas fa-plus"></i> نصب
+                </button>
+                <button id="dismissPWA" class="action-btn back-btn" type="button">
+                    <i class="fas fa-times"></i> نه، متشکرم
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="script.js"></script>
+    
+    <!-- Analytics placeholder (can be replaced with actual analytics) -->
+    <script>
+        // Simple analytics placeholder
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                console.log('PWA Invoice Generator v2.0.0 loaded');
+            });
+        }
+    </script>
 </body>
 </html>
