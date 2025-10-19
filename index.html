@@ -14,16 +14,21 @@
         <header class="header">
             <div class="header-content">
                 <h1><i class="fas fa-file-invoice"></i> سامانه صدور فاکتور</h1>
-                <div class="theme-switcher">
-                    <button id="themeToggle" class="theme-btn">
-                        <i class="fas fa-moon"></i>
+                <div class="header-actions">
+                    <button id="viewHistoryBtn" class="nav-btn">
+                        <i class="fas fa-history"></i> مشاهده فاکتورهای قبلی
                     </button>
+                    <div class="theme-switcher">
+                        <button id="themeToggle" class="theme-btn">
+                            <i class="fas fa-moon"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" id="mainContent">
             <!-- Company Info Section -->
             <section class="company-section">
                 <h2><i class="fas fa-building"></i> اطلاعات شرکت</h2>
@@ -178,6 +183,92 @@
                 </div>
             </section>
         </main>
+
+        <!-- Invoice History Section (Hidden by default) -->
+        <section class="invoice-history-section" id="historySection" style="display: none;">
+            <div class="history-header">
+                <h2><i class="fas fa-history"></i> فاکتورهای صادر شده</h2>
+                <div class="history-actions">
+                    <button id="backToMainBtn" class="action-btn back-btn">
+                        <i class="fas fa-arrow-right"></i> بازگشت
+                    </button>
+                    <button id="clearHistoryBtn" class="action-btn danger-btn">
+                        <i class="fas fa-trash"></i> پاک کردن همه
+                    </button>
+                    <button id="exportHistoryBtn" class="action-btn success-btn">
+                        <i class="fas fa-download"></i> خروجی Excel
+                    </button>
+                </div>
+            </div>
+            <div class="history-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalInvoices">0</div>
+                    <div class="stat-label">کل فاکتورها</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalRevenue">0</div>
+                    <div class="stat-label">کل درآمد (تومان)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="thisMonthInvoices">0</div>
+                    <div class="stat-label">این ماه</div>
+                </div>
+            </div>
+            <div class="history-search">
+                <div class="search-controls">
+                    <input type="text" id="searchInvoices" placeholder="جستجو در فاکتورها...">
+                    <select id="filterPeriod">
+                        <option value="all">همه دوره‌ها</option>
+                        <option value="today">امروز</option>
+                        <option value="week">هفته گذشته</option>
+                        <option value="month">ماه گذشته</option>
+                        <option value="year">سال گذشته</option>
+                    </select>
+                    <select id="sortBy">
+                        <option value="date-desc">جدیدترین</option>
+                        <option value="date-asc">قدیمی‌ترین</option>
+                        <option value="amount-desc">بیشترین مبلغ</option>
+                        <option value="amount-asc">کمترین مبلغ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="history-list" id="historyList">
+                <!-- Invoice history items will be rendered here -->
+            </div>
+            <div class="history-pagination">
+                <button id="prevPageBtn" class="page-btn" disabled>
+                    <i class="fas fa-chevron-right"></i> قبلی
+                </button>
+                <span id="pageInfo">صفحه 1 از 1</span>
+                <button id="nextPageBtn" class="page-btn" disabled>
+                    بعدی <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+        <div class="spinner"></div>
+        <p>در حال پردازش...</p>
+    </div>
+
+    <!-- Error Toast -->
+    <div class="toast error-toast" id="errorToast" style="display: none;">
+        <i class="fas fa-exclamation-circle"></i>
+        <span id="errorMessage">خطایی رخ داده است</span>
+        <button class="toast-close" onclick="hideToast('errorToast')">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <!-- Success Toast -->
+    <div class="toast success-toast" id="successToast" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <span id="successMessage">عملیات با موفقیت انجام شد</span>
+        <button class="toast-close" onclick="hideToast('successToast')">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
