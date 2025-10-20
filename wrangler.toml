@@ -1,25 +1,13 @@
-# Cloudflare Pages + Functions configuration for Invoice Generator
-# Enables KV storage for cross-device invoice sync
+name = "invoice-generator"
+compatibility_date = "2025-10-20"
+pages_build_output_dir = "."
 
 [vars]
 APP_VERSION = "2.0.3"
 ENVIRONMENT = "production"
 
-# Pages build output directory (use repository root for static site)
-pages_build_output_dir = "."
-
-# Functions directory for Pages Functions
-[functions]
-directory = "functions"
-
-# KV Namespace binding for invoice storage
-[[kv_namespaces]]
-binding = "INVOICE_DATA"
-preview_id = "YOUR_PREVIEW_KV_ID_HERE" 
-id = "YOUR_PRODUCTION_KV_ID_HERE"
-
-# Note: To complete KV setup:
-# 1. Run: wrangler kv:namespace create "INVOICE_DATA"
-# 2. Run: wrangler kv:namespace create "INVOICE_DATA" --preview  
-# 3. Replace the IDs above with the generated values
-# 4. Deploy with: wrangler pages deploy . --project-name=invoice-generator
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "invoice-generator"
+database_id = "e4dbcc4b-04fc-4444-a0f1-abe3c3f27d4c"
