@@ -1,13 +1,25 @@
-# Cloudflare Pages configuration
-# This file is for Pages builds (not Workers). It must be valid TOML.
+# Cloudflare Pages + Functions configuration for Invoice Generator
+# Enables KV storage for cross-device invoice sync
 
 [vars]
-APP_VERSION = "2.0.2"
+APP_VERSION = "2.0.3"
+ENVIRONMENT = "production"
 
-# Output directory for Pages (use repository root for static site)
+# Pages build output directory (use repository root for static site)
 pages_build_output_dir = "."
 
-# If later using Functions for Pages, specify directory:
-# functions = "functions"
+# Functions directory for Pages Functions
+[functions]
+directory = "functions"
 
-# For Workers (separate), create wrangler.worker.toml instead of this file.
+# KV Namespace binding for invoice storage
+[[kv_namespaces]]
+binding = "INVOICE_DATA"
+preview_id = "YOUR_PREVIEW_KV_ID_HERE" 
+id = "YOUR_PRODUCTION_KV_ID_HERE"
+
+# Note: To complete KV setup:
+# 1. Run: wrangler kv:namespace create "INVOICE_DATA"
+# 2. Run: wrangler kv:namespace create "INVOICE_DATA" --preview  
+# 3. Replace the IDs above with the generated values
+# 4. Deploy with: wrangler pages deploy . --project-name=invoice-generator
