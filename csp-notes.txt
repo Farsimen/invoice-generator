@@ -1,0 +1,2 @@
+/* Remove any potential unsafe eval usage, and ensure our code doesn't rely on setTimeout/setInterval with string */
+// This file intentionally left as a no-op; CSP cleanup is handled by ensuring we never call eval/new Function.
